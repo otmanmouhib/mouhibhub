@@ -13,6 +13,7 @@ export async function GET(request: NextRequest) {
   }
 
   const sources = ['atlanticdunes', 'adrobiofarm', 'mouhibhub'];
+
   const counts = await Promise.all(
     sources.map(async (dbName) => {
       const db = await getDb(dbName);
@@ -25,6 +26,8 @@ export async function GET(request: NextRequest) {
   const usersCount = await mouhibhubDb.collection('users').countDocuments();
 
   return NextResponse.json({
+    websitesMonitored: sources.length,
+    databases: sources.length,
     contacts: totalContacts,
     users: usersCount,
     health: 'Healthy',

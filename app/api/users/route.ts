@@ -12,7 +12,9 @@ export async function GET(request: NextRequest) {
     });
   }
 
-  const db = await getDb('mouhibhub');
+  const dbName = request.nextUrl.searchParams.get('db') ?? 'mouhibhub';
+  const db = await getDb(dbName);
+
   const users = await db
     .collection('users')
     .find({}, { projection: { passwordHash: 0 } })

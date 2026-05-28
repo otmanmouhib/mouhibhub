@@ -2,6 +2,12 @@ import { NextRequest, NextResponse } from 'next/server';
 import { verifyAuthToken } from '../../../lib/auth';
 import { getContactsFromDb } from '../../../lib/mongodb';
 
+const sources = [
+  { db: 'atlanticdunes' },
+  { db: 'adrobiofarm' },
+  { db: 'mouhibhub' },
+];
+
 export async function GET(request: NextRequest) {
   const token = request.cookies.get('mouhibhub-auth')?.value ?? null;
 
@@ -12,14 +18,13 @@ export async function GET(request: NextRequest) {
     });
   }
 
-  const sources = [
-    { db: 'atlanticdunes' },
-    { db: 'adrobiofarm' },
-    { db: 'mouhibhub' },
-  ];
+  const selectedDb = request.nextUrl.searchParams.get('db');
+  const sourceList = selectedDb
+    ? sources.filter((source) => source.db === selectedDb)
+    : sources;
 
   const results = await Promise.all(
-    sources.map(async (source) => ({
+    sourceList.map(async (source) => ({
       db: source.db,
       contacts: await getContactsFromDb(source.db),
     })),
