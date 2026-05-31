@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { useEffect, useMemo, useState } from 'react';
-import { useParams } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
 
 type SiteInfo = {
   db: string;
@@ -17,12 +17,18 @@ type SiteInfo = {
 
 export default function SiteOverviewPage() {
   const params = useParams();
+  const router = useRouter();
   const siteName = params?.site ?? '';
   const [site, setSite] = useState<SiteInfo | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!siteName) return;
+
+    if (siteName === 'atlanticdunes') {
+      router.replace('/dashboard/atlanticdunes');
+      return;
+    }
 
     async function loadSiteInfo() {
       try {
@@ -40,7 +46,7 @@ export default function SiteOverviewPage() {
     }
 
     loadSiteInfo();
-  }, [siteName]);
+  }, [siteName, router]);
 
   const pageActions = useMemo(
     () => [

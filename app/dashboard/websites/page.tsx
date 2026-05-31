@@ -60,7 +60,7 @@ export default function WebsitesPage() {
           websites.map((website) => (
             <Link
               key={website.db}
-              href={`/dashboard/websites/${website.db}`}
+              href={website.db === 'atlanticdunes' ? '/dashboard/atlanticdunes' : `/dashboard/websites/${website.db}`}
               className="group block rounded-[1.75rem] border border-slate-200 bg-white p-6 shadow-sm shadow-slate-900/5 transition hover:-translate-y-1 hover:border-brand-300"
             >
               <div className="flex items-start justify-between gap-4">

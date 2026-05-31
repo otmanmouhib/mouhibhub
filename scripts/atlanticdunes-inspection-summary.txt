@@ -1,0 +1,707 @@
+atlanticdunes collections (12): services, newsCategories, images, poles, products, boutique, entrepriseInfo, domains, images.chunks, images.files, news, contacts
+---
+Collection: services
+Count: 34
+Likely relation fields: _id, domainId, poleId
+Field summary:
+  - _id: string
+  - createdAt: string
+  - deliverable: string
+  - description: string
+  - domain: string
+  - domainId: string
+  - methodology: array
+  - pole: string
+  - poleId: string
+  - shortDescription: string
+  - slug: string
+  - title: string
+  - updatedAt: string
+Sample docs:
+  [1]     {
+      "_id": "analyse-cycle-de-vie-acv",
+      "slug": "analyse-cycle-de-vie-acv",
+      "title": "Analyse du cycle de vie (ACV)",
+      "shortDescription": "Mesurez l'impact environnemental de vos produits ou installations sur tout leur cycle.",
+      "description": "Nous appliquons une méthode ACV précise pour calculer les impacts sur le climat, l'eau, les déchets et l'épuisement des ressources.",
+      "methodology": [
+        "Cartographie des flux matières et énergie",
+        "Inventaire des données de cycle de vie",
+        "Calcul des impacts environnementaux selon ISO 14040/44",
+        "Synthèse des indicateurs et recommandations d'optimisation"
+      ],
+      "deliverable": "Étude ACV complète avec indicateurs environnementaux et pistes d'écoconception.",
+      "pole": "safety",
+      "poleId": "safety",
+      "domain": "eco",
+      "domainId": "eco",
+      "createdAt": "2026-05-30T17:42:18.326Z",
+      "updatedAt": "2026-05-30T17:42:18.326Z"
+    }
+  [2]     {
+      "_id": "audit-autoconsommation-rentabilite",
+      "slug": "audit-autoconsommation-rentabilite",
+      "title": "Audit d'autoconsommation & rentabilité",
+      "shortDescription": "Évaluez la rentabilité réelle de votre installation solaire en service.",
+      "description": "Audit de performance d'une installation photovoltaïque existante : analyse des courbes de consommation, optimisation du taux d'autoconsommation et recommandations pour améliorer le retour sur investissement.",
+      "methodology": [
+        "Collecte et analyse des courbes de charge et de production PV",
+        "Calcul du taux d'autoconsommation et d'autoproduction réels",
+        "Identification des potentiels d'optimisation (stockage, effacement)",
+        "Scénarios d'amélioration avec projection financière"
+      ],
+      "deliverable": "Rapport d'audit avec indicateurs de performance, analyse financière et plan d'optimisation chiffré.",
+      "pole": "energy",
+      "poleId": "energy",
+      "domain": "solar-pv",
+      "domainId": "solar-pv",
+      "createdAt": "2026-05-30T17:42:18.326Z",
+      "updatedAt": "2026-05-30T17:42:18.326Z"
+    }
+  [3]     {
+      "_id": "audit-energetique",
+      "slug": "audit-energetique",
+      "title": "Audit énergétique (réglementaire ou volontaire)",
+      "shortDescription": "Optimisez les performances énergétiques de vos installations industrielles.",
+      "description": "Qu'il s'agisse d'un audit réglementaire ou d'une démarche volontaire, nous identifions les pertes, améliorations et solutions techniques les plus pertinentes.",
+      "methodology": [
+        "Analyse des consommations et des systèmes énergétiques",
+        "Visites terrain et relevés instrumentation",
+        "Benchmark par secteur et obligations réglementaires",
+        "Recommandations ROI et plan de réduction des consommations"
+      ],
+      "deliverable": "Rapport d'audit énergétique structuré avec priorités, budgets estimés et planning de mise en œuvre.",
+      "pole": "energy",
+      "poleId": "energy",
+      "domain": "audit",
+      "domainId": "audit",
+      "createdAt": "2026-05-30T17:42:18.326Z",
+      "updatedAt": "2026-05-30T17:42:18.326Z"
+    }
+---
+Collection: newsCategories
+Count: 2
+Likely relation fields: _id
+Field summary:
+  - _id: string
+  - createdAt: string
+  - description: string
+  - id: string
+  - label: string
+  - updatedAt: string
+Sample docs:
+  [1]     {
+      "_id": "annonce",
+      "id": "annonce",
+      "label": "Annonce",
+      "description": "Communiqués, lancements de services et actualités produits.",
+      "createdAt": "2026-05-30T17:42:22.807Z",
+      "updatedAt": "2026-05-30T17:42:22.807Z"
+    }
+  [2]     {
+      "_id": "formation",
+      "id": "formation",
+      "label": "Formation",
+      "description": "Articles sur les formations, ateliers et sessions pédagogiques.",
+      "createdAt": "2026-05-30T17:42:22.807Z",
+      "updatedAt": "2026-05-30T17:42:22.807Z"
+    }
+---
+Collection: images
+Count: 30
+Likely relation fields: _id
+Field summary:
+  - _id: string
+  - contentType: string
+  - createdAt: date
+  - data: object
+  - data.buffer: buffer
+  - data.position: number
+  - data.sub_type: number
+  - filename: string
+Sample docs:
+  [1]     {
+      "_id": "Filtre-artouche-industriel",
+      "contentType": "image/png",
+      "createdAt": "2026-05-30T17:42:12.317Z"
+    }
+  [2]     {
+      "_id": "Pompe-centrifuge-industrielle-Grundfos",
+      "contentType": "image/png",
+      "createdAt": "2026-05-30T17:42:12.316Z"
+    }
+  [3]     {
+      "_id": "Unite-compacte-de-depoussierage",
+      "contentType": "image/png",
+      "createdAt": "2026-05-30T17:42:12.318Z"
+    }
+---
+Collection: poles
+Count: 7
+Likely relation fields: _id
+Field summary:
+  - _id: string
+  - createdAt: string
+  - label: string
+  - shortDescription: string
+  - slug: string
+  - updatedAt: string
+Sample docs:
+  [1]     {
+      "_id": "digital",
+      "slug": "digital",
+      "label": "Numérique & IA",
+      "shortDescription": "IoT industriel, SCADA, jumeaux numériques et intelligence artificielle.",
+      "createdAt": "2026-05-30T17:42:21.216Z",
+      "updatedAt": "2026-05-30T17:42:21.216Z"
+    }
+  [2]     {
+      "_id": "elec",
+      "slug": "elec",
+      "label": "Ingénierie Électrique",
+      "shortDescription": "Installations électriques, automatismes et continuité d'alimentation.",
+      "createdAt": "2026-05-30T17:42:21.216Z",
+      "updatedAt": "2026-05-30T17:42:21.216Z"
+    }
+  [3]     {
+      "_id": "energy",
+      "slug": "energy",
+      "label": "Énergie & Développement Durable",
+      "shortDescription": "Énergies renouvelables, solaire PV, stockage et décarbonation industrielle.",
+      "createdAt": "2026-05-30T17:42:21.216Z",
+      "updatedAt": "2026-05-30T17:42:21.216Z"
+    }
+---
+Collection: products
+Count: 26
+Likely relation fields: _id, domainId, imageId, poleId
+Field summary:
+  - _id: string
+  - createdAt: string
+  - description: string
+  - domain: string
+  - domainId: string
+  - image: string
+  - imageId: string
+  - pdfLink: string
+  - performance: string
+  - pole: string
+  - poleId: string
+  - shortDescription: string
+  - slug: string
+  - specs: array
+  - specs[].label: string
+  - specs[].value: string
+  - title: string
+  - updatedAt: string
+Sample docs:
+  [1]     {
+      "_id": "armoire-electrique-industrielle-tgbt",
+      "slug": "armoire-electrique-industrielle-tgbt",
+      "title": "Armoire électrique industrielle (TGBT / commande moteur)",
+      "shortDescription": "Distribution électrique et commande moteur sur mesure pour sites industriels.",
+      "description": "Conception et fabrication d'armoires électriques industrielles : tableaux généraux basse tension (TGBT), armoires de commande moteur (MCC) et coffrets de distribution sur mesure.",
+      "specs": [
+        {
+          "label": "Tension",
+          "value": "230 V à 690 V"
+        },
+        {
+          "label": "Courant",
+          "value": "Jusqu'à 4 000 A"
+        },
+        {
+          "label": "Indice protection",
+          "value": "IP54 à IP65"
+        },
+        {
+          "label": "Normes",
+          "value": "IEC 61439 / NF C 15-100"
+        }
+      ],
+      "performance": "Garantit une distribution électrique fiable, sécurisée et conforme aux normes avec une maintenance simplifiée.",
+      "pole": "elec",
+      "poleId": "elec",
+      "domain": "distribution",
+      "domainId": "distribution",
+      "pdfLink": "#",
+      "image": "/armoire-electrique-industrielle-tgbt.png",
+      "imageId": "armoire-electrique-industrielle-tgbt",
+      "createdAt": "2026-05-30T17:42:16.774Z",
+      "updatedAt": "2026-05-30T17:42:16.774Z"
+    }
+  [2]     {
+      "_id": "centrale-tri-dechets",
+      "slug": "centrale-tri-dechets",
+      "title": "Centrale de tri de déchets compacte ou modulaire",
+      "shortDescription": "Plateforme de pré-traitement des déchets industriels pour recyclage et valorisation.",
+      "description": "Centrale de tri clé en main conçue pour optimiser la valorisation des flux déchets et réduire les coûts de stockage.",
+      "specs": [
+        {
+          "label": "Capacité",
+          "value": "5 à 50 tonnes/j"
+        },
+        {
+          "label": "Modules",
+          "value": "Tri manuel, tamisage, densification"
+        },
+        {
+          "label": "Flexibilité",
+          "value": "Compacte ou modulaire"
+        },
+        {
+          "label": "Sorties",
+          "value": "Recyclage, compost, valorisation énergétique"
+        }
+      ],
+      "performance": "Maximise la récupération de matières et améliore les taux de recyclage des déchets industriels.",
+      "pole": "env",
+      "poleId": "env",
+      "domain": "waste",
+      "domainId": "waste",
+      "pdfLink": "#",
+      "image": "/centrale-tri-dechets.png",
+      "imageId": "centrale-tri-dechets",
+      "createdAt": "2026-05-30T17:42:16.774Z",
+      "updatedAt": "2026-05-30T17:42:16.774Z"
+    }
+  [3]     {
+      "_id": "detecteur-radioactivite",
+      "slug": "detecteur-radioactivite",
+      "title": "Détecteur de radioactivité (fixe ou portable)",
+      "shortDescription": "Mesure et surveillance des rayonnements ionisants pour sites industriels et médicaux.",
+      "description": "Détecteurs de radioactivité certifiés pour la mesure des rayonnements alpha, bêta, gamma et X dans les installations industrielles nucléaires, médicales et de recherche.",
+      "specs": [
+        {
+          "label": "Rayonnements",
+          "value": "Alpha, bêta, gamma, X"
+        },
+        {
+          "label": "Gamme",
+          "value": "0,01 µSv/h à 10 Sv/h"
+        },
+        {
+          "label": "Certification",
+          "value": "Conforme AIEA et réglementations locales"
+        },
+        {
+          "label": "Format",
+          "value": "Fixe mural ou portable terrain"
+        }
+      ],
+      "performance": "Assure une surveillance continue des zones à risque radiologique avec déclenchement d'alarme dès le dépassement du seuil réglementaire.",
+      "pole": "nuclear",
+      "poleId": "nuclear",
+      "domain": "detection",
+      "domainId": "detection",
+      "pdfLink": "#",
+      "image": "/detecteur-radioactivite.png",
+      "imageId": "detecteur-radioactivite",
+      "createdAt": "2026-05-30T17:42:16.774Z",
+      "updatedAt": "2026-05-30T17:42:16.774Z"
+    }
+---
+Collection: boutique
+Count: 20
+Likely relation fields: _id, domainId, poleId
+Field summary:
+  - _id: string
+  - availability: string
+  - createdAt: string
+  - description: string
+  - details: array
+  - domain: string
+  - domainId: string
+  - image: string
+  - inStock: boolean
+  - pole: string
+  - poleId: string
+  - price: string
+  - shortDescription: string
+  - slug: string
+  - specs: array
+  - specs[].label: string
+  - specs[].value: string
+  - title: string
+  - updatedAt: string
+Sample docs:
+  [1]     {
+      "_id": "batterie-lfp-48v-20kwh",
+      "slug": "batterie-lfp-48v-20kwh",
+      "title": "Batterie LFP 48 V 20 kWh",
+      "shortDescription": "Bloc de stockage modulaire pour application industrielle.",
+      "description": "Batterie lithium-fer-phosphate conçue pour le stockage d'énergie solaire et l'alimentation de secours en milieu industriel.",
+      "details": [
+        "Module 20 kWh empilable",
+        "BMS intégré avec monitoring",
+        "Durée de vie > 6 000 cycles",
+        "Refroidissement naturel"
+      ],
+      "specs": [
+        {
+          "label": "Capacité",
+          "value": "20 kWh"
+        },
+        {
+          "label": "Tension nominale",
+          "value": "51,2 V"
+        },
+        {
+          "label": "Courant max.",
+          "value": "200 A"
+        },
+        {
+          "label": "Poids",
+          "value": "240 kg"
+        }
+      ],
+      "price": "18 900 €",
+      "availability": "En stock limité",
+      "inStock": true,
+      "pole": "energy",
+      "poleId": "energy",
+      "domain": "storage",
+      "domainId": "storage",
+      "image": "/boutique/batterie-lfp-20kwh.jpg",
+      "createdAt": "2026-05-30T17:42:19.769Z",
+      "updatedAt": "2026-05-30T17:42:19.769Z"
+    }
+  [2]     {
+      "_id": "camera-thermique-de-surveillance",
+      "slug": "camera-thermique-de-surveillance",
+      "title": "Caméra thermique de surveillance industrielle",
+      "shortDescription": "Caméra IP pour détection incendie et contrôle de température.",
+      "description": "Caméra thermique IP destinée à la surveillance des zones chaudes et à la détection précoce d'incendie dans les process industriels.",
+      "details": [
+        "Résolution thermique 384 x 288",
+        "Analyse de points chauds en temps réel",
+        "Streaming vidéo H.265",
+        "Montage mural ou plafond"
+      ],
+      "specs": [
+        {
+          "label": "Champ de vision",
+          "value": "25°"
+        },
+        {
+          "label": "Distance d'analyse",
+          "value": "jusqu'à 60 m"
+        },
+        {
+          "label": "Protocole",
+          "value": "ONVIF"
+        },
+        {
+          "label": "IP",
+          "value": "IP66"
+        }
+      ],
+      "price": "8 200 €",
+      "availability": "Sur commande",
+      "inStock": false,
+      "pole": "safety",
+      "poleId": "safety",
+      "domain": "cctv",
+      "domainId": "cctv",
+      "image": "/boutique/camera-thermique-surveillance.jpg",
+      "createdAt": "2026-05-30T17:42:19.769Z",
+      "updatedAt": "2026-05-30T17:42:19.769Z"
+    }
+  [3]     {
+      "_id": "capteur-vibration-industriel-wireless",
+      "slug": "capteur-vibration-industriel-wireless",
+      "title": "Capteur vibration sans fil industriel",
+      "shortDescription": "Capteur de maintenance prédictive pour roulements et moteurs.",
+      "description": "Capteur sans fil pour surveillance continue des vibrations, idéal pour maintenance conditionnelle et détection d'anomalies.",
+      "details": [
+        "Transmission Bluetooth / LoRa",
+        "Autonomie 3 ans",
+        "Mesure tri-axiale",
+        "Boîtier anti-choc"
+      ],
+      "specs": [
+        {
+          "label": "Fréquence",
+          "value": "10 Hz à 10 kHz"
+        },
+        {
+          "label": "Étanchéité",
+          "value": "IP65"
+        },
+        {
+          "label": "Température",
+          "value": "-40 à 85°C"
+        },
+        {
+          "label": "Poids",
+          "value": "145 g"
+        }
+      ],
+      "price": "1 190 €",
+      "availability": "En stock",
+      "inStock": true,
+      "pole": "digital",
+      "poleId": "digital",
+      "domain": "ai",
+      "domainId": "ai",
+      "image": "/boutique/capteur-vibration-wireless.jpg",
+      "createdAt": "2026-05-30T17:42:19.769Z",
+      "updatedAt": "2026-05-30T17:42:19.769Z"
+    }
+---
+Collection: entrepriseInfo
+Count: 1
+Likely relation fields: _id
+Field summary:
+  - _id: string
+  - addressLines: array
+  - createdAt: string
+  - email: string
+  - fax: string
+  - id: string
+  - phones: array
+  - updatedAt: string
+Sample docs:
+  [1]     {
+      "_id": "main",
+      "id": "main",
+      "email": "contact@atlantic-dunes.ma",
+      "phones": [
+        "+212 6 00 64 43 60",
+        "+212 661 258 388"
+      ],
+      "fax": "+212 539 311875",
+      "addressLines": [
+        "45 Rue Ahmed Chaouki appt n°1",
+        "Centre-Ville Tanger, Maroc"
+      ],
+      "createdAt": "2026-05-30T17:42:23.498Z",
+      "updatedAt": "2026-05-30T17:42:23.498Z"
+    }
+---
+Collection: domains
+Count: 34
+Likely relation fields: _id
+Field summary:
+  - _id: string
+  - createdAt: string
+  - description: string
+  - label: string
+  - slug: string
+  - updatedAt: string
+Sample docs:
+  [1]     {
+      "_id": "access",
+      "slug": "access",
+      "label": "Contrôle d'accès",
+      "description": "Sécurisation des accès",
+      "createdAt": "2026-05-30T17:42:22.059Z",
+      "updatedAt": "2026-05-30T17:42:22.059Z"
+    }
+  [2]     {
+      "_id": "ai",
+      "slug": "ai",
+      "label": "IA prédictive",
+      "description": "Solutions d'IA et maintenance prédictive",
+      "createdAt": "2026-05-30T17:42:22.060Z",
+      "updatedAt": "2026-05-30T17:42:22.060Z"
+    }
+  [3]     {
+      "_id": "air",
+      "slug": "air",
+      "label": "Air",
+      "description": "Qualité de l'air et émissions",
+      "createdAt": "2026-05-30T17:42:22.059Z",
+      "updatedAt": "2026-05-30T17:42:22.059Z"
+    }
+---
+Collection: images.chunks
+Count: 40
+Likely relation fields: _id, files_id
+Field summary:
+  - _id: object
+  - data: object
+  - data.buffer: buffer
+  - data.position: number
+  - data.sub_type: number
+  - files_id: object
+  - n: number
+Sample docs:
+  [1]     {
+      "_id": "6a1b1121966349c6c14c8e38",
+      "files_id": "6a1b111c966349c6c14c8e21",
+      "n": 0
+    }
+  [2]     {
+      "_id": "6a1b1121966349c6c14c8e39",
+      "files_id": "6a1b111c966349c6c14c8e22",
+      "n": 0
+    }
+  [3]     {
+      "_id": "6a1b1121966349c6c14c8e3a",
+      "files_id": "6a1b111c966349c6c14c8e22",
+      "n": 1
+    }
+---
+Collection: images.files
+Count: 3
+Likely relation fields: _id
+Field summary:
+  - _id: object
+  - chunkSize: number
+  - filename: string
+  - length: number
+  - metadata: object
+  - metadata.contentType: string
+  - uploadDate: date
+Sample docs:
+  [1]     {
+      "_id": "6a1b16b17f48f5465b98f05b",
+      "length": 509379,
+      "chunkSize": 261120,
+      "uploadDate": "2026-05-30T16:56:30.031Z",
+      "filename": "formation-bilan-carbone",
+      "metadata": {
+        "contentType": "image/png"
+      }
+    }
+  [2]     {
+      "_id": "6a1b16b47f48f5465b98f05d",
+      "length": 509379,
+      "chunkSize": 261120,
+      "uploadDate": "2026-05-30T16:56:39.494Z",
+      "filename": "formation-bilan-carbone",
+      "metadata": {
+        "contentType": "image/png"
+      }
+    }
+  [3]     {
+      "_id": "6a1b16b67f48f5465b98f064",
+      "length": 818339,
+      "chunkSize": 261120,
+      "uploadDate": "2026-05-30T16:56:41.343Z",
+      "filename": "systeme-scada-industriel",
+      "metadata": {
+        "contentType": "image/png"
+      }
+    }
+---
+Collection: news
+Count: 2
+Likely relation fields: _id, categoryId, imageId
+Field summary:
+  - _id: string
+  - author: string
+  - category: string
+  - categoryId: string
+  - content: array
+  - createdAt: string
+  - date: string
+  - excerpt: string
+  - image: string
+  - imageId: string
+  - publishedAt: string
+  - slug: string
+  - status: string
+  - summary: string
+  - tags: array
+  - title: string
+  - updatedAt: string
+Sample docs:
+  [1]     {
+      "_id": "formation-bilan-carbone-ccistta",
+      "slug": "formation-bilan-carbone-ccistta",
+      "title": "Formation bilan carbone à la Chambre de commerce, d'industrie et de services de Tanger-Tétouan-Al Hoceima",
+      "date": "2026-05-24",
+      "publishedAt": "2026-05-24",
+      "updatedAt": "2026-05-24",
+      "categoryId": "formation",
+      "category": "Formation",
+      "image": "/formation-bilan-carbone.png",
+      "summary": "Atlantic Dunes a animé une formation dédiée au bilan carbone à la CCISTTA, afin d'accompagner les entreprises régionales vers une transition plus durable.",
+      "excerpt": "Une formation pratique sur le bilan carbone animée par Atlantic Dunes à la CCISTTA, pour accélérer la transition durable des entreprises locales.",
+      "author": "Equipe Atlantic Dunes",
+      "tags": [
+        "formation",
+        "bilan carbone",
+        "transition"
+      ],
+      "status": "published",
+      "content": [
+        "Le 24 mai 2026, Atlantic Dunes était présente à la Chambre de commerce, d'industrie et de services de Tanger-Tétouan-Al Hoceima (CCISTTA) pour une session de formation intensive sur le bilan carbone.",
+        "L'objectif principal était de sensibiliser les acteurs économiques locaux aux enjeux du calcul des émissions de gaz à effet de serre et de fournir des outils concrets pour établir des bilans carbone fiables.",
+        "La formation a couvert l'identification des sources d'émissions, la collecte de données, la méthode de calcul adaptée aux entreprises industrielles et les premières actions de réduction.",
+        "Cette initiative s'inscrit dans l'engagement d'Atlantic Dunes d'accompagner les entreprises marocaines vers des pratiques plus responsables, en favorisant l'innovation verte et la performance environnementale."
+      ],
+      "imageId": "formation-bilan-carbone",
+      "createdAt": "2026-05-30T17:42:15.578Z"
+    }
+  [2]     {
+      "_id": "lancement-nouvelle-offre-supervision-iot",
+      "slug": "lancement-nouvelle-offre-supervision-iot",
+      "title": "Lancement de notre offre de supervision IoT pour les sites industriels",
+      "date": "2026-04-10",
+      "publishedAt": "2026-04-10",
+      "updatedAt": "2026-04-10",
+      "categoryId": "annonce",
+      "category": "Annonce",
+      "image": "/systeme-scada-industriel.png",
+      "summary": "Atlantic Dunes déploie une nouvelle offre de supervision IoT pour optimiser la maintenance et la performance des installations industrielles.",
+      "excerpt": "Une offre IoT enrichie pour superviser les flux industriels et anticiper les interventions critiques.",
+      "author": "Equipe Atlantic Dunes",
+      "tags": [
+        "IoT",
+        "SCADA",
+        "maintenance"
+      ],
+      "status": "published",
+      "content": [
+        "Nous sommes heureux d'annoncer le lancement d'une solution de supervision IoT sur mesure, pensée pour les sites industriels, les stations de traitement et les infrastructures critiques.",
+        "Cette solution combine capteurs connectés, tableau de bord SCADA et intelligence embarquée pour anticiper les pannes et fiabiliser les opérations.",
+        "Les premières expérimentations montrent une réduction significative des interventions non planifiées et une meilleure visibilité sur la consommation énergétique.",
+        "Atlantic Dunes continue d'investir dans les solutions numériques qui renforcent l'efficacité opérationnelle tout en réduisant l'empreinte environnementale."
+      ],
+      "imageId": "systeme-scada-industriel",
+      "createdAt": "2026-05-30T17:42:15.578Z"
+    }
+---
+Collection: contacts
+Count: 8
+Likely relation fields: _id
+Field summary:
+  - _id: object
+  - createdAt: date
+  - email: string
+  - message: string
+  - name: string
+  - phone: string
+  - status: string
+Sample docs:
+  [1]     {
+      "_id": "6a0b9d92d705f2de13d01c7d",
+      "name": "xx",
+      "email": "xxxxx@xxxx.xom",
+      "phone": "xxxxx",
+      "message": "xxxxxx",
+      "status": "new",
+      "createdAt": "2026-05-18T23:15:30.826Z"
+    }
+  [2]     {
+      "_id": "6a0ba103d705f2de13d01c7e",
+      "name": "XXX",
+      "email": "test@test.com",
+      "phone": "066661",
+      "message": "XXXXX",
+      "status": "new",
+      "createdAt": "2026-05-18T23:30:11.100Z"
+    }
+  [3]     {
+      "_id": "6a0ba50a4e21487f0b2c3ad0",
+      "name": "YYYY",
+      "email": "YYY@YYY.com",
+      "phone": "0123456789",
+      "message": "sxa",
+      "status": "new",
+      "createdAt": "2026-05-18T23:47:22.249Z"
+    }
+---

@@ -39,14 +39,8 @@ export default function AtlanticDunesPage() {
         <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
           <div>
             <h2 className="text-2xl font-semibold text-slate-900">Atlantic Dunes Collections</h2>
-            <p className="mt-2 text-sm text-slate-600">Manage the Atlantic Dunes schema and related content directly in MongoDB.</p>
+            <p className="mt-2 text-sm text-slate-600">Choose a collection to manage, then add or edit records from the next screen.</p>
           </div>
-          <Link
-            href="/dashboard/atlanticdunes/poles/new"
-            className="rounded-3xl border border-brand-200 bg-brand-50 px-4 py-3 text-sm font-semibold text-brand-700 transition hover:bg-brand-100"
-          >
-            Create new record
-          </Link>
         </div>
       </div>
 
