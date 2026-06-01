@@ -1,7 +1,8 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useParams } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
+import { fetchWithAuthRedirect } from 'lib/fetch-client';
 
 type User = {
   id: string;
@@ -15,15 +16,15 @@ export default function WebsiteUsersPage() {
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const router = useRouter();
 
   useEffect(() => {
     if (!siteName) return;
 
     async function fetchUsers() {
       try {
-        const response = await fetch(`/api/users?db=${siteName}`, {
-          credentials: 'include',
-        });
+        const response = await fetchWithAuthRedirect(router, `/api/users?db=${siteName}`);
+        if (response.status === 401) return;
         if (!response.ok) {
           throw new Error('Could not load users for this website');
         }

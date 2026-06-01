@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { ObjectId } from 'mongodb';
+import { Filter, ObjectId } from 'mongodb';
 import { verifyAuthToken } from '../../../../../lib/auth';
 import { getAtlanticDunesDb } from '../../../../../lib/db';
 
@@ -17,12 +17,20 @@ function badRequest(message: string) {
   });
 }
 
-async function resolveObjectId(id: string) {
+function resolveObjectId(id: string) {
   try {
     return new ObjectId(id);
   } catch {
     return null;
   }
+}
+
+function buildImageFilter(id: string): Filter<any> {
+  const objectId = resolveObjectId(id);
+  if (objectId) {
+    return { $or: [{ _id: objectId }, { _id: id }] } as Filter<any>;
+  }
+  return { _id: id } as Filter<any>;
 }
 
 export async function DELETE(request: NextRequest, context: { params: Promise<{ id: string }> }) {
@@ -32,13 +40,10 @@ export async function DELETE(request: NextRequest, context: { params: Promise<{ 
   }
 
   const { id } = await context.params;
-  const objectId = await resolveObjectId(id);
-  if (!objectId) {
-    return badRequest('Invalid image id.');
-  }
+  const filter = buildImageFilter(id);
 
   const db = await getAtlanticDunesDb();
-  const result = await db.collection('images').deleteOne({ _id: objectId });
+  const result = await db.collection('images').deleteOne(filter);
   if (result.deletedCount === 0) {
     return new NextResponse(JSON.stringify({ message: 'Image not found.' }), { status: 404, headers: { 'Content-Type': 'application/json' } });
   }
@@ -53,11 +58,6 @@ export async function PATCH(request: NextRequest, context: { params: Promise<{ i
   }
 
   const { id } = await context.params;
-  const objectId = await resolveObjectId(id);
-  if (!objectId) {
-    return badRequest('Invalid image id.');
-  }
-
   const formData = await request.formData().catch(() => null);
   if (!formData) {
     return badRequest('Invalid request body.');
@@ -68,6 +68,7 @@ export async function PATCH(request: NextRequest, context: { params: Promise<{ i
   const label = String(formData.get('label') ?? '').trim();
 
   const db = await getAtlanticDunesDb();
+  const filter = buildImageFilter(id);
   const update: Record<string, any> = { updatedAt: new Date() };
 
   if (file instanceof File && file.size > 0) {
@@ -85,7 +86,7 @@ export async function PATCH(request: NextRequest, context: { params: Promise<{ i
   }
 
   const result = await db.collection('images').findOneAndUpdate(
-    { _id: objectId },
+    filter,
     { $set: update },
     { returnDocument: 'after' },
   );

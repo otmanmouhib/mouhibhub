@@ -1,6 +1,8 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { fetchWithAuthRedirect } from 'lib/fetch-client';
 
 type DashboardStats = {
   websitesMonitored: number;
@@ -13,18 +15,19 @@ type DashboardStats = {
 export default function DashboardPage() {
   const [stats, setStats] = useState<DashboardStats | null>(null);
 
+  const router = useRouter();
+
   useEffect(() => {
     async function fetchStats() {
-      const response = await fetch('/api/dashboard/stats', {
-        credentials: 'include',
-      });
+      const response = await fetchWithAuthRedirect(router, '/api/dashboard/stats');
+      if (response.status === 401) return;
       if (response.ok) {
         const data = await response.json();
         setStats(data);
       }
     }
     fetchStats();
-  }, []);
+  }, [router]);
 
   return (
     <div className="space-y-8 p-6">

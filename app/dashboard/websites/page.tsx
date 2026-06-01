@@ -2,6 +2,8 @@
 
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { fetchWithAuthRedirect } from 'lib/fetch-client';
 
 type WebsiteSummary = {
   db: string;
@@ -17,13 +19,13 @@ type WebsiteSummary = {
 export default function WebsitesPage() {
   const [websites, setWebsites] = useState<WebsiteSummary[]>([]);
   const [error, setError] = useState<string | null>(null);
+  const router = useRouter();
 
   useEffect(() => {
     async function fetchWebsites() {
       try {
-        const response = await fetch('/api/dashboard/websites', {
-          credentials: 'include',
-        });
+        const response = await fetchWithAuthRedirect(router, '/api/dashboard/websites');
+        if (response.status === 401) return;
 
         if (!response.ok) {
           throw new Error('Unable to load available websites');
@@ -60,7 +62,7 @@ export default function WebsitesPage() {
           websites.map((website) => (
             <Link
               key={website.db}
-              href={website.db === 'atlanticdunes' ? '/dashboard/atlanticdunes' : `/dashboard/websites/${website.db}`}
+              href={`/dashboard/websites/${website.db}`}
               className="group block rounded-[1.75rem] border border-slate-200 bg-white p-6 shadow-sm shadow-slate-900/5 transition hover:-translate-y-1 hover:border-brand-300"
             >
               <div className="flex items-start justify-between gap-4">

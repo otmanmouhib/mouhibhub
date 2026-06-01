@@ -2,18 +2,17 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { toast } from 'sonner';
 
 export default function LoginPage() {
   const router = useRouter();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [submitting, setSubmitting] = useState(false);
-  const [error, setError] = useState('');
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setSubmitting(true);
-    setError('');
 
     const response = await fetch('/api/auth/login', {
       method: 'POST',
@@ -30,7 +29,8 @@ export default function LoginPage() {
     }
 
     const payload = await response.json();
-    setError(payload?.message || 'Invalid credentials');
+    const errorMessage = payload?.message || 'Invalid credentials';
+    toast.error(errorMessage);
   }
 
   return (
@@ -99,7 +99,6 @@ export default function LoginPage() {
               </button>
             </form>
 
-            {error ? <p className="mt-5 text-center text-sm text-rose-300">{error}</p> : null}
           </div>
         </div>
       </section>

@@ -1,7 +1,8 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useParams } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
+import { fetchWithAuthRedirect } from 'lib/fetch-client';
 
 type Report = {
   id: string;
@@ -16,15 +17,15 @@ export default function WebsiteReportsPage() {
   const [reports, setReports] = useState<Report[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const router = useRouter();
 
   useEffect(() => {
     if (!siteName) return;
 
     async function fetchReports() {
       try {
-        const response = await fetch(`/api/reports?db=${siteName}`, {
-          credentials: 'include',
-        });
+        const response = await fetchWithAuthRedirect(router, `/api/reports?db=${siteName}`);
+        if (response.status === 401) return;
         if (!response.ok) {
           throw new Error('Could not load reports for this website');
         }

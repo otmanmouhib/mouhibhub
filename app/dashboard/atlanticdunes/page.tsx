@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import { fetchWithAuthRedirect } from 'lib/fetch-client';
 
 type CollectionSummary = {
   name: string;
@@ -14,12 +16,13 @@ export default function AtlanticDunesPage() {
   const [collections, setCollections] = useState<CollectionSummary[]>([]);
   const [error, setError] = useState<string | null>(null);
 
+  const router = useRouter();
+
   useEffect(() => {
     async function fetchCollections() {
       try {
-        const response = await fetch('/api/atlanticdunes?info=collections', {
-          credentials: 'include',
-        });
+        const response = await fetchWithAuthRedirect(router, '/api/atlanticdunes?info=collections');
+        if (response.status === 401) return;
         if (!response.ok) {
           throw new Error('Unable to load Atlantic Dunes collections');
         }

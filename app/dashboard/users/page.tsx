@@ -1,6 +1,8 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { fetchWithAuthRedirect } from 'lib/fetch-client';
 
 type User = {
   id: string;
@@ -11,13 +13,13 @@ type User = {
 export default function UsersPage() {
   const [users, setUsers] = useState<User[]>([]);
   const [error, setError] = useState<string | null>(null);
+  const router = useRouter();
 
   useEffect(() => {
     async function fetchUsers() {
       try {
-        const response = await fetch('/api/users', {
-          credentials: 'include',
-        });
+        const response = await fetchWithAuthRedirect(router, '/api/users');
+        if (response.status === 401) return;
 
         if (!response.ok) {
           const payload = await response.json().catch(() => null);

@@ -1,6 +1,8 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { fetchWithAuthRedirect } from 'lib/fetch-client';
 
 type Contact = {
   id: string;
@@ -13,13 +15,13 @@ type Contact = {
 export default function ContactsPage() {
   const [contacts, setContacts] = useState<Contact[]>([]);
   const [error, setError] = useState<string | null>(null);
+  const router = useRouter();
 
   useEffect(() => {
     async function fetchContacts() {
       try {
-        const response = await fetch('/api/contacts', {
-          credentials: 'include',
-        });
+        const response = await fetchWithAuthRedirect(router, '/api/contacts');
+        if (response.status === 401) return;
         if (!response.ok) {
           throw new Error('Failed to fetch contacts');
         }

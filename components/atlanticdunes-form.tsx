@@ -2,6 +2,8 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { toast } from 'sonner';
+import { fetchWithAuthRedirect } from 'lib/fetch-client';
 import {
   AtlanticDunesCollectionSchema,
   AtlanticDunesField,
@@ -10,6 +12,13 @@ import {
 
 type RelatedOption = { value: string; label: string; filename?: string };
 type RelatedOptions = Record<string, Array<RelatedOption>>;
+type UploadQueueItem = {
+  id: string;
+  file: File;
+  filename: string;
+  extension: string;
+  label: string;
+};
 
 type Props = {
   collectionName: string;
@@ -23,11 +32,23 @@ const DEFAULT_IMAGE_PAGE_SIZE = 9;
 const SMALL_SCREEN_IMAGE_PAGE_SIZE = 3;
 
 function slugify(value: string) {
-  return value
+  const normalized = value
+    .normalize('NFD')
+    .replace(/\p{Diacritic}/gu, '')
     .toLowerCase()
-    .trim()
+    .trim();
+
+  return normalized
     .replace(/[^a-z0-9]+/g, '-')
     .replace(/(^-|-$)/g, '');
+}
+
+function getRecordSlug(formData: FormData) {
+  return slugify(String(formData.title ?? formData.label ?? formData.slug ?? '')).replace(/^[-]+|[-]+$/g, '') || 'image';
+}
+
+function sanitizeFilename(value: string) {
+  return value.replace(/[\\/]/g, '');
 }
 
 function defaultValueForField(field: AtlanticDunesField) {
@@ -91,6 +112,10 @@ export default function AtlanticDunesForm({ collectionName, mode, itemId }: Prop
   const [imagePageSize, setImagePageSize] = useState(DEFAULT_IMAGE_PAGE_SIZE);
   const [uploadingImages, setUploadingImages] = useState(false);
   const [imageEdits, setImageEdits] = useState<Record<string, { filename: string; label: string }>>({});
+  const [galleryOpen, setGalleryOpen] = useState<Record<string, boolean>>({});
+  const [uploadQueues, setUploadQueues] = useState<Record<string, UploadQueueItem[]>>({});
+  const [relationCreateOpen, setRelationCreateOpen] = useState<Record<string, boolean>>({});
+  const [relationDrafts, setRelationDrafts] = useState<Record<string, { label: string; slug: string; description: string }>>({});
 
   const relationCollections = useMemo(() => {
     if (!schema) return [];
@@ -140,7 +165,7 @@ export default function AtlanticDunesForm({ collectionName, mode, itemId }: Prop
       }
       setLoading(true);
       try {
-        const response = await fetch(`/api/atlanticdunes/${collectionName}/${encodeURIComponent(itemId)}`, {
+        const response = await fetchWithAuthRedirect(router, `/api/atlanticdunes/${collectionName}/${encodeURIComponent(itemId)}`, {
           credentials: 'include',
         });
         if (!response.ok) {
@@ -160,7 +185,9 @@ export default function AtlanticDunesForm({ collectionName, mode, itemId }: Prop
         }
         setFormData(normalized);
       } catch (err) {
-        setError(err instanceof Error ? err.message : 'Unable to load record');
+        const errorMessage = err instanceof Error ? err.message : 'Unable to load record';
+        toast.error(errorMessage);
+        setError(errorMessage);
       } finally {
         setLoading(false);
       }
@@ -175,7 +202,7 @@ export default function AtlanticDunesForm({ collectionName, mode, itemId }: Prop
     await Promise.all(
       relationCollections.map(async (rel) => {
         try {
-          const response = await fetch(`/api/atlanticdunes/related/${rel}`, { credentials: 'include' });
+          const response = await fetchWithAuthRedirect(router, `/api/atlanticdunes/related/${rel}`, { credentials: 'include' });
           if (!response.ok) {
             values[rel] = [];
             return;
@@ -201,10 +228,53 @@ export default function AtlanticDunesForm({ collectionName, mode, itemId }: Prop
     refreshRelatedOptions();
   }, [relationCollections]);
 
-  async function handleImageUpload(fieldName: string, files: FileList | File[]) {
+  function queueImageFiles(fieldName: string, files: FileList | File[]) {
     const fileArray = Array.isArray(files) ? files : Array.from(files);
     const imageFiles = fileArray.filter((file): file is File => file instanceof File && file.size > 0);
     if (imageFiles.length === 0) return;
+
+    setUploadQueues((prev) => {
+      const current = prev[fieldName] ?? [];
+      const recordSlug = getRecordSlug(formData);
+      const queued = imageFiles.map((file, index) => {
+        const match = file.name.match(/(\.[^/.]+)$/);
+        const extension = match ? match[0] : '';
+        const baseName = `${recordSlug}-${current.length + index + 1}`;
+        return {
+          id: `${Date.now()}-${Math.random().toString(16).slice(2)}`,
+          file,
+          filename: baseName,
+          extension,
+          label: baseName,
+        };
+      });
+      return { ...prev, [fieldName]: [...current, ...queued] };
+    });
+  }
+
+  function setGalleryOpenFor(fieldName: string, open: boolean) {
+    setGalleryOpen((prev) => ({ ...prev, [fieldName]: open }));
+  }
+
+  function updateUploadQueueItem(fieldName: string, itemId: string, patch: Partial<UploadQueueItem>) {
+    setUploadQueues((prev) => ({
+      ...prev,
+      [fieldName]: (prev[fieldName] ?? []).map((item) =>
+        item.id === itemId ? { ...item, ...patch } : item,
+      ),
+    }));
+  }
+
+  function removeUploadQueueItem(fieldName: string, itemId: string) {
+    setUploadQueues((prev) => ({
+      ...prev,
+      [fieldName]: (prev[fieldName] ?? []).filter((item) => item.id !== itemId),
+    }));
+  }
+
+  async function uploadPendingImages(fieldName: string) {
+    const queueItems = uploadQueues[fieldName] ?? [];
+    if (!queueItems.length) return;
 
     setUploadingImages(true);
     setError(null);
@@ -212,14 +282,17 @@ export default function AtlanticDunesForm({ collectionName, mode, itemId }: Prop
 
     try {
       const uploadFormData = new FormData();
-      imageFiles.forEach((file) => uploadFormData.append('images', file));
+      queueItems.forEach((item) => {
+        uploadFormData.append('images', item.file);
+        uploadFormData.append('filenames', `${item.filename}${item.extension}`);
+        uploadFormData.append('labels', item.label);
+      });
 
-      const response = await fetch('/api/atlanticdunes/images', {
+      const response = await fetchWithAuthRedirect(router, '/api/atlanticdunes/images', {
         method: 'POST',
         body: uploadFormData,
         credentials: 'include',
       });
-
       const result = await response.json();
       if (!response.ok) {
         throw new Error(result?.message || 'Upload failed');
@@ -233,29 +306,31 @@ export default function AtlanticDunesForm({ collectionName, mode, itemId }: Prop
       setRelatedOptions((prev) => ({
         ...prev,
         images: [
-          ...uploaded.map((item: any) => ({ value: String(item._id), label: item.filename })),
+          ...uploaded.map((item: any) => ({ value: String(item._id), label: item.label ?? item.filename, filename: item.filename })),
           ...(prev.images ?? []),
         ],
       }));
 
-      if (uploaded.length > 0) {
-        const ids: string[] = uploaded.map((item: any) => String(item._id));
-        const currentValue = formData[fieldName];
-
-        if (Array.isArray(currentValue)) {
-          const values = [...currentValue];
-          ids.forEach((id) => {
-            if (!values.includes(id)) values.push(id);
-          });
-          updateField(fieldName, values);
-        } else {
-          updateField(fieldName, ids[0]);
-        }
+      const ids: string[] = uploaded.map((item: any) => String(item._id));
+      const currentValue = formData[fieldName];
+      if (Array.isArray(currentValue)) {
+        const values = [...currentValue];
+        ids.forEach((id) => {
+          if (!values.includes(id)) values.push(id);
+        });
+        updateField(fieldName, values);
+      } else {
+        updateField(fieldName, ids[0]);
       }
 
-      setMessage(`Uploaded ${uploaded.length} image${uploaded.length === 1 ? '' : 's'}.`);
+      setUploadQueues((prev) => ({ ...prev, [fieldName]: [] }));
+      const successMessage = `Uploaded ${uploaded.length} image${uploaded.length === 1 ? '' : 's'}.`;
+      toast.success(successMessage);
+      setMessage(successMessage);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Unable to upload image.');
+      const errorMessage = err instanceof Error ? err.message : 'Unable to upload image.';
+      toast.error(errorMessage);
+      setError(errorMessage);
     } finally {
       setUploadingImages(false);
     }
@@ -271,7 +346,7 @@ export default function AtlanticDunesForm({ collectionName, mode, itemId }: Prop
     setMessage(null);
 
     try {
-      const response = await fetch(`/api/atlanticdunes/images/${encodeURIComponent(imageId)}`, {
+      const response = await fetchWithAuthRedirect(router, `/api/atlanticdunes/images/${encodeURIComponent(imageId)}`, {
         method: 'DELETE',
         credentials: 'include',
       });
@@ -296,9 +371,13 @@ export default function AtlanticDunesForm({ collectionName, mode, itemId }: Prop
         return prev;
       });
 
-      setMessage('Image deleted successfully.');
+      const successMessage = 'Image deleted successfully.';
+      toast.success(successMessage);
+      setMessage(successMessage);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Unable to delete image.');
+      const errorMessage = err instanceof Error ? err.message : 'Unable to delete image.';
+      toast.error(errorMessage);
+      setError(errorMessage);
     } finally {
       setUploadingImages(false);
     }
@@ -315,7 +394,7 @@ export default function AtlanticDunesForm({ collectionName, mode, itemId }: Prop
       const uploadFormData = new FormData();
       uploadFormData.append('image', file);
 
-      const response = await fetch(`/api/atlanticdunes/images/${encodeURIComponent(imageId)}`, {
+      const response = await fetchWithAuthRedirect(router, `/api/atlanticdunes/images/${encodeURIComponent(imageId)}`, {
         method: 'PATCH',
         body: uploadFormData,
         credentials: 'include',
@@ -333,9 +412,13 @@ export default function AtlanticDunesForm({ collectionName, mode, itemId }: Prop
         ),
       }));
 
-      setMessage('Image replaced successfully.');
+      const successMessage = 'Image replaced successfully.';
+      toast.success(successMessage);
+      setMessage(successMessage);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Unable to replace image.');
+      const errorMessage = err instanceof Error ? err.message : 'Unable to replace image.';
+      toast.error(errorMessage);
+      setError(errorMessage);
     } finally {
       setUploadingImages(false);
     }
@@ -345,7 +428,9 @@ export default function AtlanticDunesForm({ collectionName, mode, itemId }: Prop
     const fileName = filename.trim();
     const imageLabel = label.trim();
     if (!fileName && !imageLabel) {
-      setError('Filename or related name must be provided.');
+      const errorMessage = 'Filename or related name must be provided.';
+      toast.error(errorMessage);
+      setError(errorMessage);
       return;
     }
 
@@ -362,7 +447,7 @@ export default function AtlanticDunesForm({ collectionName, mode, itemId }: Prop
         formData.append('label', imageLabel);
       }
 
-      const response = await fetch(`/api/atlanticdunes/images/${encodeURIComponent(imageId)}`, {
+      const response = await fetchWithAuthRedirect(router, `/api/atlanticdunes/images/${encodeURIComponent(imageId)}`, {
         method: 'PATCH',
         body: formData,
         credentials: 'include',
@@ -386,9 +471,13 @@ export default function AtlanticDunesForm({ collectionName, mode, itemId }: Prop
           label: updated.label ?? imageLabel,
         },
       }));
-      setMessage('Image metadata updated successfully.');
+      const successMessage = 'Image metadata updated successfully.';
+      toast.success(successMessage);
+      setMessage(successMessage);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Unable to rename image.');
+      const errorMessage = err instanceof Error ? err.message : 'Unable to rename image.';
+      toast.error(errorMessage);
+      setError(errorMessage);
     } finally {
       setUploadingImages(false);
     }
@@ -396,14 +485,20 @@ export default function AtlanticDunesForm({ collectionName, mode, itemId }: Prop
 
   useEffect(() => {
     if (!schema || mode !== 'create') return;
-    const title = String(formData.title ?? '');
     const slugField = schema.fields.find((field) => field.type === 'slug');
     if (!slugField) return;
-    const currentSlug = String(formData.slug ?? '');
-    if (!currentSlug && title) {
-      setFormData((prev) => ({ ...prev, slug: slugify(title) }));
+
+    const titleField = schema.fields.find((field) => field.name === 'title');
+    const labelField = schema.fields.find((field) => field.name === 'label');
+    const sourceName = titleField?.name ?? labelField?.name;
+    if (!sourceName) return;
+    const sourceValue = String(formData[sourceName] ?? '');
+    const currentSlug = String(formData[slugField.name] ?? '');
+
+    if (!currentSlug && sourceValue) {
+      setFormData((prev) => ({ ...prev, [slugField.name]: slugify(sourceValue) }));
     }
-  }, [formData.title, mode, schema]);
+  }, [formData.title, formData.label, mode, schema]);
 
   if (!schema) {
     return <div className="p-6 text-red-600">Unknown Atlantic Dunes collection: {collectionName}</div>;
@@ -411,6 +506,93 @@ export default function AtlanticDunesForm({ collectionName, mode, itemId }: Prop
 
   function updateField(name: string, value: any) {
     setFormData((prev) => ({ ...prev, [name]: value }));
+  }
+
+  function toggleRelationCreate(fieldName: string, open: boolean) {
+    setRelationCreateOpen((prev) => ({ ...prev, [fieldName]: open }));
+  }
+
+  function updateRelationDraft(fieldName: string, patch: Partial<{ label: string; slug: string; description: string }>) {
+    setRelationDrafts((prev) => ({
+      ...prev,
+      [fieldName]: {
+        label: prev[fieldName]?.label ?? '',
+        slug: prev[fieldName]?.slug ?? '',
+        description: prev[fieldName]?.description ?? '',
+        ...patch,
+      },
+    }));
+  }
+
+  async function createRelatedRecord(field: AtlanticDunesField) {
+    if (!field.relation) return;
+
+    const relationCollection = field.relation.collection;
+    const relationValueField = field.relation.valueField ?? '_id';
+    const relationLabelField = field.relation.labelField ?? 'label';
+    const draft = relationDrafts[field.name] ?? { label: '', slug: '', description: '' };
+    const label = draft.label.trim();
+    const slug = draft.slug.trim();
+    const description = draft.description.trim();
+
+    if (!label || !slug) {
+      const errorMessage = 'Label and slug are required to create a new item.';
+      toast.error(errorMessage);
+      setError(errorMessage);
+      return;
+    }
+
+    setError(null);
+    setMessage(null);
+    setSaving(true);
+
+    try {
+      const payload: Record<string, any> = { label, slug };
+      if (field.relation.collection === 'poles') {
+        payload.shortDescription = description;
+      }
+      if (field.relation.collection === 'domains') {
+        payload.description = description;
+      }
+
+      const response = await fetchWithAuthRedirect(router, `/api/atlanticdunes/${field.relation.collection}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify(payload),
+      });
+      const result = await response.json();
+      if (!response.ok) {
+        throw new Error(result?.message || `Unable to create ${field.label.toLowerCase()}.`);
+      }
+
+      const document = result.document;
+      const optionValue = String(document[relationValueField]);
+      const optionLabel = String(document[relationLabelField] ?? document.label ?? optionValue);
+      const option = { value: optionValue, label: optionLabel };
+
+      setRelatedOptions((prev) => ({
+        ...prev,
+        [relationCollection]: [...(prev[relationCollection] ?? []), option],
+      }));
+
+      updateField(field.name, optionValue);
+      setRelationDrafts((prev) => ({
+        ...prev,
+        [field.name]: { label: '', slug: '', description: '' },
+      }));
+      toggleRelationCreate(field.name, false);
+
+      const successMessage = `${field.label} created and selected.`;
+      toast.success(successMessage);
+      setMessage(successMessage);
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : `Unable to create ${field.label.toLowerCase()}.`;
+      toast.error(errorMessage);
+      setError(errorMessage);
+    } finally {
+      setSaving(false);
+    }
   }
 
   function updateArrayItem(fieldName: string, index: number, value: string) {
@@ -460,7 +642,7 @@ export default function AtlanticDunesForm({ collectionName, mode, itemId }: Prop
     try {
       const url = mode === 'create' ? `/api/atlanticdunes/${collectionName}` : `/api/atlanticdunes/${collectionName}/${encodeURIComponent(itemId ?? String(formData._id))}`;
       const method = mode === 'create' ? 'POST' : 'PUT';
-      const response = await fetch(url, {
+      const response = await fetchWithAuthRedirect(router, url, {
         method,
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
@@ -470,12 +652,16 @@ export default function AtlanticDunesForm({ collectionName, mode, itemId }: Prop
       if (!response.ok) {
         throw new Error(result?.message || 'Unable to save record');
       }
-      setMessage('Saved successfully.');
+      const successMessage = 'Saved successfully.';
+      toast.success(successMessage);
+      setMessage(successMessage);
       if (mode === 'create' && result.document?._id) {
         router.push(`/dashboard/atlanticdunes/${collectionName}/${encodeURIComponent(result.document._id)}`);
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Unable to save record');
+      const errorMessage = err instanceof Error ? err.message : 'Unable to save record';
+      toast.error(errorMessage);
+      setError(errorMessage);
     } finally {
       setSaving(false);
     }
@@ -487,7 +673,6 @@ export default function AtlanticDunesForm({ collectionName, mode, itemId }: Prop
 
     switch (field.type) {
       case 'text':
-      case 'slug':
       case 'date':
       case 'number':
         return (
@@ -500,6 +685,18 @@ export default function AtlanticDunesForm({ collectionName, mode, itemId }: Prop
             placeholder={field.placeholder}
           />
         );
+      case 'slug': {
+        return (
+          <input
+            type="text"
+            id={field.name}
+            value={String(value ?? '')}
+            readOnly
+            className="mt-2 w-full rounded-2xl border border-slate-200 bg-slate-100 px-4 py-3 text-sm text-slate-500 outline-none"
+            placeholder="Auto-generated from title or label"
+          />
+        );
+      }
       case 'textarea':
         return (
           <textarea
@@ -526,6 +723,15 @@ export default function AtlanticDunesForm({ collectionName, mode, itemId }: Prop
       case 'select': {
         const imageRelationOptions = relationOptions as RelatedOption[];
         const selectedImageOption = field.relation?.collection === 'images' ? imageRelationOptions.find((option) => option.value === String(value)) : undefined;
+        const galleryVisible = galleryOpen[field.name] ?? false;
+        const queue = uploadQueues[field.name] ?? [];
+        const unselectedOptions = imageRelationOptions.filter((option) => option.value !== String(value));
+        const filteredOptions = imageSearch.trim()
+          ? unselectedOptions.filter((option) => option.label.toLowerCase().includes(imageSearch.toLowerCase()))
+          : unselectedOptions;
+        const pageCount = Math.max(1, Math.ceil(filteredOptions.length / imagePageSize));
+        const currentPage = Math.min(imagePage, pageCount - 1);
+        const pageOptions = filteredOptions.slice(currentPage * imagePageSize, currentPage * imagePageSize + imagePageSize);
         const selectedEdit = selectedImageOption
           ? imageEdits[selectedImageOption.value] ?? {
               filename: selectedImageOption.filename ?? selectedImageOption.label,
@@ -534,10 +740,9 @@ export default function AtlanticDunesForm({ collectionName, mode, itemId }: Prop
           : undefined;
         const selectedFilenameParts = selectedEdit?.filename.split('.') ?? [''];
         const selectedExtension = selectedFilenameParts.length > 1 ? `.${selectedFilenameParts.pop()}` : '';
-        const selectedBaseName = selectedFilenameParts.join('.');
-        const isRenameEnabled = selectedEdit && selectedImageOption
-          ? selectedEdit.filename !== (selectedImageOption.filename ?? selectedImageOption.label) || selectedEdit.label !== selectedImageOption.label
-          : false;
+        const selectedBaseName = sanitizeFilename(selectedFilenameParts.join('.'));
+        const sanitizedFilename = `${selectedBaseName}${selectedExtension}`;
+
         return (
           <>
             <select
@@ -553,14 +758,144 @@ export default function AtlanticDunesForm({ collectionName, mode, itemId }: Prop
                 </option>
               ))}
             </select>
-            {field.relation?.collection === 'images' ? (
-              <div className="mt-4 space-y-4 rounded-3xl border border-slate-200 bg-slate-50 p-4">
-                <div className="grid gap-4 sm:grid-cols-[1.5fr_1fr]">
+            {['poles', 'domains'].includes(field.relation?.collection ?? '') ? (
+              <div className="mt-4 rounded-3xl border border-slate-200 bg-slate-50 p-4">
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                   <div>
-                    <p className="text-sm font-medium text-slate-900">Upload image</p>
-                    <p className="mt-1 text-sm text-slate-500">Add a new file and have it selected automatically.</p>
-                    <label className="mt-3 inline-flex cursor-pointer items-center gap-2 rounded-2xl bg-brand-600 px-4 py-3 text-sm font-semibold text-white transition hover:bg-brand-700">
-                      {uploadingImages ? 'Uploading…' : 'Upload image'}
+                    <p className="text-sm font-semibold text-slate-900">Create new {field.label.toLowerCase()}</p>
+                    <p className="text-sm text-slate-500">Add a new {field.label.toLowerCase()} without leaving this form.</p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => toggleRelationCreate(field.name, !(relationCreateOpen[field.name] ?? false))}
+                    className="rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm font-semibold text-slate-900 transition hover:bg-slate-100"
+                  >
+                    {relationCreateOpen[field.name] ? `Cancel` : `New ${field.label}`}
+                  </button>
+                </div>
+                {relationCreateOpen[field.name] ? (
+                  <div className="mt-4 space-y-4 rounded-3xl border border-slate-200 bg-white p-4">
+                    <div>
+                      <label className="text-sm font-medium text-slate-900">Label</label>
+                      <input
+                        type="text"
+                        value={relationDrafts[field.name]?.label ?? ''}
+                        onChange={(event) => updateRelationDraft(field.name, {
+                          label: event.target.value,
+                          slug: slugify(event.target.value),
+                        })}
+                        className="mt-2 w-full rounded-2xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-900 outline-none transition focus:border-brand-400 focus:ring-2 focus:ring-brand-500/20"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium text-slate-900">Slug</label>
+                      <input
+                        type="text"
+                        value={relationDrafts[field.name]?.slug ?? ''}
+                        readOnly
+                        className="mt-2 w-full rounded-2xl border border-slate-200 bg-slate-100 px-3 py-2 text-sm text-slate-500 outline-none"
+                        placeholder="Auto-generated from label"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium text-slate-900">{field.relation?.collection === 'poles' ? 'Short description' : 'Description'}</label>
+                      <textarea
+                        value={relationDrafts[field.name]?.description ?? ''}
+                        onChange={(event) => updateRelationDraft(field.name, { description: event.target.value })}
+                        rows={3}
+                        className="mt-2 w-full rounded-2xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-900 outline-none transition focus:border-brand-400 focus:ring-2 focus:ring-brand-500/20"
+                      />
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => createRelatedRecord(field)}
+                      disabled={saving}
+                      className="w-full rounded-2xl bg-brand-600 px-4 py-3 text-sm font-semibold text-white transition hover:bg-brand-700 disabled:cursor-not-allowed disabled:opacity-50"
+                    >
+                      Create {field.label}
+                    </button>
+                  </div>
+                ) : null}
+              </div>
+            ) : null}
+            {field.relation?.collection === 'images' ? (
+              <div className="mt-4 rounded-3xl border border-slate-200 bg-white p-4 space-y-6">
+                {selectedImageOption ? (
+                  <>
+                    <div className="grid gap-4 lg:grid-cols-[1.5fr_1fr]">
+                      <div className="relative overflow-hidden rounded-3xl border border-slate-200 bg-slate-100">
+                        <img
+                          src={`/api/images/${encodeURIComponent(selectedImageOption.value)}`}
+                          alt={selectedImageOption.label}
+                          className="h-40 w-full object-cover"
+                        />
+                        <label className="pointer-events-auto absolute right-3 top-3 inline-flex items-center gap-2 rounded-2xl bg-white/90 px-3 py-2 text-sm font-semibold text-slate-900 shadow-sm">
+                          <input
+                            type="checkbox"
+                            checked
+                            onChange={() => updateField(field.name, '')}
+                            className="h-4 w-4 rounded border-slate-300 text-brand-500 focus:ring-brand-500"
+                          />
+                          Selected
+                        </label>
+                      </div>
+                      <div className="grid gap-3">
+                        <div>
+                          <label className="text-sm font-medium text-slate-900">Filename</label>
+                          <div className="mt-2 flex flex-col gap-2 sm:flex-row sm:items-center">
+                            <div className="flex flex-1 items-center gap-2">
+                              <input
+                                type="text"
+                                value={selectedBaseName}
+                                onChange={(event) => {
+                                  const safeBaseName = event.target.value.replace(/[\\/]/g, '');
+                                  setImageEdits((prev) => ({
+                                    ...prev,
+                                    [selectedImageOption.value]: {
+                                      filename: `${safeBaseName}${selectedExtension}`,
+                                      label: selectedEdit?.label ?? selectedImageOption.label,
+                                    },
+                                  }));
+                                }}
+                                className="flex-1 rounded-2xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-900 outline-none transition focus:border-brand-400 focus:ring-2 focus:ring-brand-500/20"
+                              />
+                              <span className="flex items-center rounded-2xl border border-slate-200 bg-white px-3 text-sm text-slate-600">{selectedExtension || '.png'}</span>
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => renameImageInLibrary(
+                                selectedImageOption.value,
+                                sanitizedFilename,
+                                selectedEdit?.label ?? selectedImageOption.label,
+                              )}
+                              disabled={uploadingImages}
+                              className="rounded-2xl border border-brand-600 bg-brand-600 px-4 py-3 text-sm font-semibold text-white transition hover:bg-brand-700 disabled:cursor-not-allowed disabled:opacity-50"
+                            >
+                              Save filename
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => deleteImageFromLibrary(selectedImageOption.value, field.name)}
+                              disabled={uploadingImages}
+                              className="rounded-2xl border border-rose-300 bg-rose-50 px-4 py-3 text-sm font-semibold text-rose-700 transition hover:bg-rose-100 disabled:cursor-not-allowed disabled:opacity-50"
+                            >
+                              Delete image
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </>
+                ) : (
+                  <div className="rounded-3xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-600">
+                    No image selected.
+                  </div>
+                )}
+
+                <div>
+                  <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                    <label className="inline-flex cursor-pointer items-center gap-2 rounded-2xl bg-brand-600 px-4 py-3 text-sm font-semibold text-white transition hover:bg-brand-700">
+                      {uploadingImages ? 'Queued…' : 'Upload an image'}
                       <input
                         type="file"
                         accept="image/*"
@@ -568,107 +903,135 @@ export default function AtlanticDunesForm({ collectionName, mode, itemId }: Prop
                         onChange={(event) => {
                           const files = event.target.files;
                           if (files?.length) {
-                            handleImageUpload(field.name, files);
+                            queueImageFiles(field.name, files);
                             event.target.value = '';
                           }
                         }}
                       />
                     </label>
+                    <button
+                      type="button"
+                      onClick={() => setGalleryOpenFor(field.name, !galleryVisible)}
+                      className="rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm font-semibold text-slate-900 transition hover:bg-slate-100"
+                    >
+                      {galleryVisible ? 'Hide gallery' : 'Open gallery'}
+                    </button>
                   </div>
-                  {selectedImageOption ? (
-                    <div className="rounded-3xl border border-slate-200 bg-white p-4">
-                      <p className="text-sm font-semibold text-slate-900">Selected image</p>
-                      <p className="text-sm text-slate-500">Manage the currently selected image directly.</p>
-                      <div className="mt-4 flex flex-col gap-3">
-                        <div className="overflow-hidden rounded-3xl border border-slate-200 bg-slate-100">
-                          <img
-                            src={`/api/images/${encodeURIComponent(selectedImageOption.value)}`}
-                            alt={selectedImageOption.label}
-                            className="h-40 w-full object-cover"
-                          />
-                        </div>
-                        <div className="grid gap-3">
-                          <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-                            <label className="inline-flex cursor-pointer items-center gap-2 rounded-2xl bg-brand-600 px-4 py-3 text-sm font-semibold text-white transition hover:bg-brand-700">
-                              {uploadingImages ? 'Replacing…' : 'Replace image'}
-                              <input
-                                type="file"
-                                accept="image/*"
-                                className="sr-only"
-                                onChange={(event) => {
-                                  const file = event.target.files?.[0];
-                                  if (file) {
-                                    replaceImageInLibrary(field.name, selectedImageOption.value, file);
-                                    event.target.value = '';
-                                  }
-                                }}
-                              />
-                            </label>
+                  {queue.length > 0 ? (
+                    <div className="mt-4 rounded-3xl border border-slate-200 bg-slate-50 p-4">
+                      <p className="text-sm font-semibold text-slate-900">Pending upload</p>
+                      <p className="text-sm text-slate-500">Edit filename and label before uploading.</p>
+                      <div className="mt-4 space-y-4">
+                        {queue.map((item) => (
+                          <div key={item.id} className="grid gap-3 sm:grid-cols-[1fr_auto]">
+                            <div className="grid gap-3 rounded-2xl border border-slate-200 bg-white p-3">
+                              <div>
+                                <label className="text-sm font-medium text-slate-900">Filename</label>
+                                <input
+                                  type="text"
+                                  value={item.filename}
+                                  onChange={(event) => updateUploadQueueItem(field.name, item.id, { filename: event.target.value })}
+                                  className="mt-2 w-full rounded-2xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-900 outline-none transition focus:border-brand-400 focus:ring-2 focus:ring-brand-500/20"
+                                />
+                              </div>
+                              <div>
+                                <label className="text-sm font-medium text-slate-900">Related image name</label>
+                                <input
+                                  type="text"
+                                  value={item.label}
+                                  onChange={(event) => updateUploadQueueItem(field.name, item.id, { label: event.target.value })}
+                                  className="mt-2 w-full rounded-2xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-900 outline-none transition focus:border-brand-400 focus:ring-2 focus:ring-brand-500/20"
+                                />
+                              </div>
+                            </div>
                             <button
                               type="button"
-                              onClick={() => deleteImageFromLibrary(selectedImageOption.value, field.name)}
+                              onClick={() => removeUploadQueueItem(field.name, item.id)}
                               className="rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm font-semibold text-slate-900 transition hover:bg-slate-100"
-                              disabled={uploadingImages}
                             >
-                              Delete image
+                              Remove
                             </button>
                           </div>
-                          <div className="rounded-3xl border border-slate-200 bg-white p-3">
-                            <div className="grid gap-3">
-                              <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-                                <div className="w-full">
-                                  <label className="text-sm font-medium text-slate-900">Filename</label>
-                                  <div className="mt-2 flex gap-2">
-                                    <input
-                                      type="text"
-                                      value={selectedBaseName}
-                                      onChange={(event) =>
-                                        setImageEdits((prev) => ({
-                                          ...prev,
-                                          [selectedImageOption.value]: {
-                                            filename: `${event.target.value}${selectedExtension}`,
-                                            label: selectedEdit?.label ?? selectedImageOption.label,
-                                          },
-                                        }))
-                                      }
-                                      className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-900 outline-none transition focus:border-brand-400 focus:ring-2 focus:ring-brand-500/20"
-                                    />
-                                    <span className="flex items-center rounded-2xl border border-slate-200 bg-white px-3 text-sm text-slate-600">{selectedExtension || '.png'}</span>
-                                  </div>
-                                </div>
-                                <div className="w-full">
-                                  <label className="text-sm font-medium text-slate-900">Related image name</label>
-                                  <input
-                                    type="text"
-                                    value={selectedEdit?.label ?? selectedImageOption.label}
-                                    onChange={(event) =>
-                                      setImageEdits((prev) => ({
-                                        ...prev,
-                                        [selectedImageOption.value]: {
-                                          filename: selectedEdit?.filename ?? selectedImageOption.filename ?? selectedImageOption.label,
-                                          label: event.target.value,
-                                        },
-                                      }))
-                                    }
-                                    className="mt-2 w-full rounded-2xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-900 outline-none transition focus:border-brand-400 focus:ring-2 focus:ring-brand-500/20"
-                                  />
-                                </div>
-                              </div>
-                              <button
-                                type="button"
-                                onClick={() => renameImageInLibrary(selectedImageOption.value, selectedEdit?.filename ?? selectedImageOption.filename ?? selectedImageOption.label, selectedEdit?.label ?? selectedImageOption.label)}
-                                disabled={!isRenameEnabled || uploadingImages}
-                                className="rounded-2xl border border-brand-600 bg-brand-600 px-4 py-3 text-sm font-semibold text-white transition hover:bg-brand-700 disabled:cursor-not-allowed disabled:opacity-50"
-                              >
-                                Save image metadata
-                              </button>
-                            </div>
-                          </div>
-                        </div>
+                        ))}
+                        <button
+                          type="button"
+                          onClick={() => uploadPendingImages(field.name)}
+                          className="w-full rounded-2xl bg-brand-600 px-4 py-3 text-sm font-semibold text-white transition hover:bg-brand-700"
+                        >
+                          Upload queued images
+                        </button>
                       </div>
                     </div>
                   ) : null}
                 </div>
+                {galleryVisible ? (
+                  <div className="space-y-4 rounded-3xl border border-slate-200 bg-white p-4">
+                    <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                      <input
+                        type="search"
+                        value={imageSearch}
+                        onChange={(event) => setImageSearch(event.target.value)}
+                        placeholder="Filter gallery by name..."
+                        className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-brand-400 focus:ring-2 focus:ring-brand-500/20 sm:w-64"
+                      />
+                      <p className="text-sm text-slate-500">{filteredOptions.length} available</p>
+                    </div>
+                    <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+                      {pageOptions.map((option) => (
+                        <button
+                          key={option.value}
+                          type="button"
+                          onClick={() => updateField(field.name, option.value)}
+                          className="group flex flex-col overflow-hidden rounded-[1.75rem] border border-slate-200 bg-slate-50 text-left transition hover:border-brand-300"
+                        >
+                          <div className="relative h-40 w-full overflow-hidden bg-slate-100">
+                            <img
+                              src={`/api/images/${encodeURIComponent(option.value)}`}
+                              alt={option.label}
+                              className="h-full w-full object-cover transition duration-200 group-hover:scale-105"
+                            />
+                            <div className="pointer-events-none absolute right-3 top-3 rounded-2xl bg-white/90 p-2 shadow-sm">
+                              <input
+                                type="checkbox"
+                                checked={false}
+                                readOnly
+                                className="h-4 w-4 rounded border-slate-300 text-brand-500"
+                              />
+                            </div>
+                          </div>
+                          <div className="p-4">
+                            <p className="truncate text-sm font-semibold text-slate-900">{option.label}</p>
+                            <p className="mt-2 text-xs text-slate-500">{option.filename ?? option.label}</p>
+                          </div>
+                        </button>
+                      ))}
+                    </div>
+                    <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                      <p className="text-sm text-slate-500">
+                        Showing {filteredOptions.length === 0 ? 0 : currentPage * imagePageSize + 1} – {Math.min((currentPage + 1) * imagePageSize, filteredOptions.length)} of {filteredOptions.length}
+                      </p>
+                      <div className="inline-flex items-center gap-2 rounded-3xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700">
+                        <button
+                          type="button"
+                          onClick={() => setImagePage((page) => Math.max(page - 1, 0))}
+                          disabled={currentPage === 0}
+                          className="rounded-full px-3 py-1 transition hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-50"
+                        >
+                          Previous
+                        </button>
+                        <span className="font-semibold">{currentPage + 1} / {pageCount}</span>
+                        <button
+                          type="button"
+                          onClick={() => setImagePage((page) => Math.min(page + 1, pageCount - 1))}
+                          disabled={currentPage >= pageCount - 1}
+                          className="rounded-full px-3 py-1 transition hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-50"
+                        >
+                          Next
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                ) : null}
               </div>
             ) : null}
           </>
@@ -677,8 +1040,13 @@ export default function AtlanticDunesForm({ collectionName, mode, itemId }: Prop
       case 'multiSelect': {
         const selectedValues = Array.isArray(value) ? value : [];
         const isImageGallery = field.relation?.collection === 'images';
+        const imageRelationOptions = relationOptions as RelatedOption[];
+        const queue = uploadQueues[field.name] ?? [];
+        const galleryVisible = galleryOpen[field.name] ?? false;
+        const selectedOptions = isImageGallery ? imageRelationOptions.filter((option) => selectedValues.includes(option.value)) : [];
+        const unselectedOptions = isImageGallery ? imageRelationOptions.filter((option) => !selectedValues.includes(option.value)) : [];
         const filteredOptions = isImageGallery
-          ? relationOptions.filter((option) => option.label.toLowerCase().includes(imageSearch.toLowerCase()))
+          ? unselectedOptions.filter((option) => option.label.toLowerCase().includes(imageSearch.toLowerCase()))
           : relationOptions;
 
         const pageCount = isImageGallery ? Math.max(1, Math.ceil(filteredOptions.length / imagePageSize)) : 1;
@@ -690,90 +1058,162 @@ export default function AtlanticDunesForm({ collectionName, mode, itemId }: Prop
         if (isImageGallery) {
           return (
             <div className="space-y-4 mt-2">
-              <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-                <div>
-                  <p className="text-sm font-semibold text-slate-900">Gallery images</p>
-                  <p className="text-sm text-slate-500">Browse and select one or more image assets from the media library.</p>
-                </div>
-                <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-                  <input
-                    type="search"
-                    value={imageSearch}
-                    onChange={(event) => setImageSearch(event.target.value)}
-                    placeholder="Search images..."
-                    className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-brand-400 focus:ring-2 focus:ring-brand-500/20 sm:w-64"
-                  />
-                  <label className="inline-flex cursor-pointer items-center gap-2 rounded-2xl bg-brand-600 px-4 py-3 text-sm font-semibold text-white transition hover:bg-brand-700">
-                    {uploadingImages ? 'Uploading…' : 'Upload images'}
+              <div className="rounded-3xl border border-slate-200 bg-white p-4">
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                  <div>
+                    <p className="text-sm font-semibold text-slate-900">Gallery</p>
+                    <p className="text-sm text-slate-500">Select from uploaded images.</p>
+                  </div>
+                  <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
                     <input
-                      type="file"
-                      accept="image/*"
-                      multiple
-                      className="sr-only"
-                      onChange={(event) => {
-                        const files = event.target.files;
-                        if (files?.length) {
-                          handleImageUpload(field.name, files);
-                          event.target.value = '';
-                        }
-                      }}
+                      type="search"
+                      value={imageSearch}
+                      onChange={(event) => setImageSearch(event.target.value)}
+                      placeholder="Search gallery..."
+                      className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-brand-400 focus:ring-2 focus:ring-brand-500/20 sm:w-64"
                     />
-                  </label>
+                    <button
+                      type="button"
+                      onClick={() => setGalleryOpenFor(field.name, !galleryVisible)}
+                      className="rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm font-semibold text-slate-900 transition hover:bg-slate-100"
+                    >
+                      {galleryVisible ? 'Hide gallery' : 'Open gallery'}
+                    </button>
+                  </div>
+                </div>
+
+                <div className="grid gap-4 lg:grid-cols-[1.4fr_0.6fr]">
+                  <div className="rounded-3xl border border-slate-200 bg-slate-50 p-4">
+                    <p className="text-sm font-semibold text-slate-900">Upload new images</p>
+                    <p className="mt-1 text-sm text-slate-500">Selected images remain visible.</p>
+                    <label className="mt-4 inline-flex cursor-pointer items-center gap-2 rounded-2xl bg-brand-600 px-4 py-3 text-sm font-semibold text-white transition hover:bg-brand-700">
+                      {uploadingImages ? 'Uploading…' : 'Upload images'}
+                      <input
+                        type="file"
+                        accept="image/*"
+                        multiple
+                        className="sr-only"
+                        onChange={(event) => {
+                          const files = event.target.files;
+                          if (files?.length) {
+                            queueImageFiles(field.name, files);
+                            event.target.value = '';
+                          }
+                        }}
+                      />
+                    </label>
+                    {queue.length > 0 ? (
+                      <div className="mt-4 space-y-4 rounded-3xl border border-slate-200 bg-white p-4">
+                        <p className="text-sm font-semibold text-slate-900">Pending upload</p>
+                        <p className="text-sm text-slate-500">Edit filename and related name before uploading.</p>
+                        <div className="space-y-4">
+                          {queue.map((item) => (
+                            <div key={item.id} className="grid gap-3 sm:grid-cols-[1fr_auto]">
+                              <div className="grid gap-3 rounded-2xl border border-slate-200 bg-slate-50 p-3">
+                                <div>
+                                  <label className="text-sm font-medium text-slate-900">Filename</label>
+                                  <input
+                                    type="text"
+                                    value={item.filename}
+                                    onChange={(event) => updateUploadQueueItem(field.name, item.id, { filename: event.target.value.replace(/[\\/]/g, '') })}
+                                    className="mt-2 w-full rounded-2xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 outline-none transition focus:border-brand-400 focus:ring-2 focus:ring-brand-500/20"
+                                  />
+                                </div>
+                                <div>
+                                  <label className="text-sm font-medium text-slate-900">Related image name</label>
+                                  <input
+                                    type="text"
+                                    value={item.label}
+                                    onChange={(event) => updateUploadQueueItem(field.name, item.id, { label: event.target.value })}
+                                    className="mt-2 w-full rounded-2xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 outline-none transition focus:border-brand-400 focus:ring-2 focus:ring-brand-500/20"
+                                  />
+                                </div>
+                              </div>
+                              <button
+                                type="button"
+                                onClick={() => removeUploadQueueItem(field.name, item.id)}
+                                className="rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm font-semibold text-slate-900 transition hover:bg-slate-100"
+                              >
+                                Remove
+                              </button>
+                            </div>
+                          ))}
+                          <button
+                            type="button"
+                            onClick={() => uploadPendingImages(field.name)}
+                            className="w-full rounded-2xl bg-brand-600 px-4 py-3 text-sm font-semibold text-white transition hover:bg-brand-700"
+                          >
+                            Upload queued images
+                          </button>
+                        </div>
+                      </div>
+                    ) : null}
+                  </div>
+
+                  <div className="rounded-3xl border border-slate-200 bg-slate-50 p-4">
+                    <p className="text-sm font-semibold text-slate-900">Selected images</p>
+                    <p className="mt-1 text-sm text-slate-500">These images are already selected for this record.</p>
+                    {selectedOptions.length === 0 ? (
+                      <p className="mt-4 text-sm text-slate-500">No images selected yet.</p>
+                    ) : (
+                      <div className="mt-4 grid gap-4 sm:grid-cols-2">
+                        {selectedOptions.map((option) => (
+                          <div key={option.value} className="rounded-3xl border border-slate-200 bg-white p-3">
+                            <div className="relative h-32 overflow-hidden rounded-3xl bg-slate-100">
+                              <img
+                                src={`/api/images/${encodeURIComponent(option.value)}`}
+                                alt={option.label}
+                                className="h-full w-full object-cover"
+                              />
+                              <label className="absolute right-3 top-3 inline-flex items-center rounded-2xl bg-white/90 p-2 shadow-sm">
+                                <input
+                                  type="checkbox"
+                                  checked
+                                  onChange={() => {
+                                    const values = Array.isArray(value) ? [...value] : [];
+                                    updateField(field.name, values.filter((id) => id !== option.value));
+                                  }}
+                                  className="h-4 w-4 rounded border-slate-300 text-brand-500 focus:ring-brand-500"
+                                />
+                              </label>
+                            </div>
+                            <div className="mt-3 space-y-2">
+                              <p className="truncate text-sm font-semibold text-slate-900">{option.label}</p>
+                              <p className="text-xs text-slate-500">{option.filename ?? option.label}</p>
+                              <button
+                                type="button"
+                                onClick={() => deleteImageFromLibrary(option.value, field.name)}
+                                className="rounded-2xl border border-rose-300 bg-rose-50 px-3 py-2 text-xs font-semibold text-rose-700 transition hover:bg-rose-100"
+                              >
+                                Delete image
+                              </button>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
 
-              {filteredOptions.length === 0 ? (
-                <div className="rounded-3xl border border-slate-200 bg-slate-50 p-5 text-sm text-slate-600">No matching gallery images found.</div>
-              ) : (
-                <>
+              {galleryVisible ? (
+                <div className="space-y-4 rounded-3xl border border-slate-200 bg-white p-4">
                   <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                    <p className="text-sm text-slate-500">
-                      Showing {currentPage * imagePageSize + 1} – {Math.min((currentPage + 1) * imagePageSize, filteredOptions.length)} of {filteredOptions.length} images
-                    </p>
-                    <div className="inline-flex items-center gap-2 rounded-3xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700">
-                      <button
-                        type="button"
-                        onClick={() => setImagePage((page) => Math.max(page - 1, 0))}
-                        disabled={currentPage === 0}
-                        className="rounded-full px-3 py-1 transition hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-50"
-                      >
-                        Previous
-                      </button>
-                      <span className="font-semibold">{currentPage + 1} / {pageCount}</span>
-                      <button
-                        type="button"
-                        onClick={() => setImagePage((page) => Math.min(page + 1, pageCount - 1))}
-                        disabled={currentPage >= pageCount - 1}
-                        className="rounded-full px-3 py-1 transition hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-50"
-                      >
-                        Next
-                      </button>
-                    </div>
+                    <p className="text-sm text-slate-500">Choose unselected gallery images.</p>
+                    <p className="text-sm text-slate-500">{filteredOptions.length} available</p>
                   </div>
 
-                  <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-                    {pageOptions.map((option) => {
-                      const selected = selectedValues.includes(option.value);
-                      return (
-                        <div
-                          key={option.value}
-                          className={`group relative flex flex-col overflow-hidden rounded-[1.75rem] border bg-white transition focus-within:ring-2 focus-within:ring-brand-500/20 ${
-                            selected ? 'border-brand-500 shadow-[0_0_0_4px_rgba(59,130,246,0.12)]' : 'border-slate-200 hover:border-brand-300'
-                          }`}
-                        >
+                  {filteredOptions.length === 0 ? (
+                    <div className="rounded-3xl border border-slate-200 bg-slate-50 p-5 text-sm text-slate-600">No matching gallery images found.</div>
+                  ) : (
+                    <>
+                      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+                        {pageOptions.map((option) => (
                           <button
+                            key={option.value}
                             type="button"
-                            onClick={() => {
-                              const values = Array.isArray(value) ? [...value] : [];
-                              const index = values.indexOf(option.value);
-                              if (index === -1) {
-                                values.push(option.value);
-                              } else {
-                                values.splice(index, 1);
-                              }
-                              updateField(field.name, values);
-                            }}
-                            className="text-left"
+                            onClick={() => updateField(field.name, [...selectedValues, option.value])}
+                            className="group flex flex-col overflow-hidden rounded-[1.75rem] border border-slate-200 bg-slate-50 text-left transition hover:border-brand-300"
                           >
                             <div className="relative h-40 w-full overflow-hidden bg-slate-100">
                               <img
@@ -781,122 +1221,51 @@ export default function AtlanticDunesForm({ collectionName, mode, itemId }: Prop
                                 alt={option.label}
                                 className="h-full w-full object-cover transition duration-200 group-hover:scale-105"
                               />
-                              <div className="absolute inset-0 bg-gradient-to-t from-slate-950/60 via-transparent to-transparent" />
-                            </div>
-                            <div className="flex flex-col gap-2 p-4">
-                              <div className="flex items-center justify-between gap-3">
-                                <p className="truncate text-sm font-semibold text-slate-900">{option.label}</p>
-                                <span className={`rounded-full px-2 py-1 text-[11px] font-semibold ${selected ? 'bg-brand-500 text-white' : 'bg-slate-100 text-slate-600'}`}>
-                                  {selected ? 'Selected' : 'Tap to select'}
-                                </span>
+                              <div className="pointer-events-none absolute right-3 top-3 rounded-2xl bg-white/90 p-2 shadow-sm">
+                                <input
+                                  type="checkbox"
+                                  checked={false}
+                                  readOnly
+                                  className="h-4 w-4 rounded border-slate-300 text-brand-500"
+                                />
                               </div>
+                            </div>
+                            <div className="p-4">
+                              <p className="truncate text-sm font-semibold text-slate-900">{option.label}</p>
+                              <p className="mt-2 text-xs text-slate-500">{(option as RelatedOption).filename ?? option.label}</p>
                             </div>
                           </button>
-                          {selected ? (
-                            <div className="border-t border-slate-200 bg-slate-50 p-4">
-                              <div className="grid gap-3">
-                                <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-                                  <label className="inline-flex cursor-pointer items-center gap-2 rounded-2xl bg-brand-600 px-3 py-2 text-sm font-semibold text-white transition hover:bg-brand-700">
-                                    Replace
-                                    <input
-                                      type="file"
-                                      accept="image/*"
-                                      className="sr-only"
-                                      onChange={(event) => {
-                                        const file = event.target.files?.[0];
-                                        if (file) {
-                                          replaceImageInLibrary(field.name, option.value, file);
-                                          event.target.value = '';
-                                        }
-                                      }}
-                                    />
-                                  </label>
-                                  <button
-                                    type="button"
-                                    onClick={() => deleteImageFromLibrary(option.value, field.name)}
-                                    className="rounded-2xl border border-slate-300 bg-white px-3 py-2 text-sm font-semibold text-slate-900 transition hover:bg-slate-100"
-                                    disabled={uploadingImages}
-                                  >
-                                    Delete
-                                  </button>
-                                </div>
-                                <div className="rounded-3xl border border-slate-200 bg-white p-3">
-                                  <div className="grid gap-3 sm:grid-cols-2">
-                                    <div>
-                                      <label className="text-sm font-medium text-slate-900">Filename</label>
-                                      <div className="mt-2 flex gap-2">
-                                        <input
-                                          type="text"
-                                          value={(imageEdits[option.value]?.filename ?? (option as RelatedOption).filename ?? option.label).replace(/(\.[^/.]+)$/, '')}
-                                          onChange={(event) => {
-                                            const current = imageEdits[option.value] ?? {
-                                              filename: (option as RelatedOption).filename ?? option.label,
-                                              label: option.label,
-                                            };
-                                            const extension = (current.filename.match(/(\.[^/.]+)$/) || [''])[0];
-                                            setImageEdits((prev) => ({
-                                              ...prev,
-                                              [option.value]: {
-                                                filename: `${event.target.value}${extension}`,
-                                                label: current.label,
-                                              },
-                                            }));
-                                          }}
-                                          className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-900 outline-none transition focus:border-brand-400 focus:ring-2 focus:ring-brand-500/20"
-                                        />
-                                        <span className="flex items-center rounded-2xl border border-slate-200 bg-white px-3 text-sm text-slate-600">{(imageEdits[option.value]?.filename ?? (option as RelatedOption).filename ?? option.label).match(/(\.[^/.]+)$/)?.[0] ?? '.png'}</span>
-                                      </div>
-                                    </div>
-                                    <div>
-                                      <label className="text-sm font-medium text-slate-900">Related image name</label>
-                                      <input
-                                        type="text"
-                                        value={imageEdits[option.value]?.label ?? option.label}
-                                        onChange={(event) => {
-                                          const current = imageEdits[option.value] ?? {
-                                            filename: (option as RelatedOption).filename ?? option.label,
-                                            label: option.label,
-                                          };
-                                          setImageEdits((prev) => ({
-                                            ...prev,
-                                            [option.value]: {
-                                              filename: current.filename,
-                                              label: event.target.value,
-                                            },
-                                          }));
-                                        }}
-                                        className="mt-2 w-full rounded-2xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-900 outline-none transition focus:border-brand-400 focus:ring-2 focus:ring-brand-500/20"
-                                      />
-                                    </div>
-                                  </div>
-                                  <button
-                                    type="button"
-                                    onClick={() => {
-                                      const current = imageEdits[option.value] ?? {
-                                        filename: (option as RelatedOption).filename ?? option.label,
-                                        label: option.label,
-                                      };
-                                      renameImageInLibrary(option.value, current.filename, current.label);
-                                    }}
-                                    disabled={uploadingImages}
-                                    className="mt-3 rounded-2xl border border-brand-600 bg-brand-600 px-4 py-3 text-sm font-semibold text-white transition hover:bg-brand-700 disabled:cursor-not-allowed disabled:opacity-50"
-                                  >
-                                    Save image metadata
-                                  </button>
-                                </div>
-                              </div>
-                            </div>
-                          ) : null}
-                        </div>
-                      );
-                    })}
-                  </div>
-                </>
-              )}
+                        ))}
+                      </div>
 
-              <div className="rounded-3xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-600">
-                {selectedValues.length} image{selectedValues.length === 1 ? '' : 's'} selected.
-              </div>
+                      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                        <p className="text-sm text-slate-500">
+                          Showing {currentPage * imagePageSize + 1} – {Math.min((currentPage + 1) * imagePageSize, filteredOptions.length)} of {filteredOptions.length}
+                        </p>
+                        <div className="inline-flex items-center gap-2 rounded-3xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700">
+                          <button
+                            type="button"
+                            onClick={() => setImagePage((page) => Math.max(page - 1, 0))}
+                            disabled={currentPage === 0}
+                            className="rounded-full px-3 py-1 transition hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-50"
+                          >
+                            Previous
+                          </button>
+                          <span className="font-semibold">{currentPage + 1} / {pageCount}</span>
+                          <button
+                            type="button"
+                            onClick={() => setImagePage((page) => Math.min(page + 1, pageCount - 1))}
+                            disabled={currentPage >= pageCount - 1}
+                            className="rounded-full px-3 py-1 transition hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-50"
+                          >
+                            Next
+                          </button>
+                        </div>
+                      </div>
+                    </>
+                  )}
+                </div>
+              ) : null}
             </div>
           );
         }
@@ -1026,13 +1395,6 @@ export default function AtlanticDunesForm({ collectionName, mode, itemId }: Prop
           </button>
         </div>
       </div>
-
-      {error ? (
-        <div className="rounded-3xl border border-rose-200 bg-rose-50 p-6 text-sm text-rose-700 shadow-sm shadow-rose-900/5">{error}</div>
-      ) : null}
-      {message ? (
-        <div className="rounded-3xl border border-emerald-200 bg-emerald-50 p-6 text-sm text-emerald-700 shadow-sm shadow-emerald-900/5">{message}</div>
-      ) : null}
 
       <form onSubmit={handleSubmit} className="space-y-6">
         {loading ? (

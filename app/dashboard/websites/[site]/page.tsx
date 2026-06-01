@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { useEffect, useMemo, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
+import { fetchWithAuthRedirect } from 'lib/fetch-client';
 
 type SiteInfo = {
   db: string;
@@ -25,16 +26,10 @@ export default function SiteOverviewPage() {
   useEffect(() => {
     if (!siteName) return;
 
-    if (siteName === 'atlanticdunes') {
-      router.replace('/dashboard/atlanticdunes');
-      return;
-    }
-
     async function loadSiteInfo() {
       try {
-        const response = await fetch(`/api/dashboard/websites/${siteName}`, {
-          credentials: 'include',
-        });
+        const response = await fetchWithAuthRedirect(router, `/api/dashboard/websites/${siteName}`);
+        if (response.status === 401) return;
         if (!response.ok) {
           throw new Error('Unable to load website details');
         }
@@ -50,6 +45,16 @@ export default function SiteOverviewPage() {
 
   const pageActions = useMemo(
     () => [
+      ...(siteName === 'atlanticdunes'
+        ? [{ key: 'collections', label: 'Collections', href: '/dashboard/atlanticdunes' }]
+        : []),
+      { key: 'manage-services', label: 'Manage services', href: `/dashboard/websites/${siteName}/manage-services` },
+      { key: 'manage-products', label: 'Manage products', href: `/dashboard/websites/${siteName}/manage-products` },
+      { key: 'manage-boutique', label: 'Manage boutique', href: `/dashboard/websites/${siteName}/manage-boutique` },
+      { key: 'manage-gallery', label: 'Manage gallery', href: `/dashboard/websites/${siteName}/manage-gallery` },
+      { key: 'manage-entreprise-informations', label: 'Manage entreprise informations', href: `/dashboard/websites/${siteName}/manage-entreprise-informations` },
+      { key: 'manage-contact-submissions', label: 'Manage contact submissions', href: `/dashboard/websites/${siteName}/manage-contact-submissions` },
+      { key: 'manage-report-tickets', label: 'Manage report tickets', href: `/dashboard/websites/${siteName}/manage-report-tickets` },
       ...(site?.availableCollections.includes('contacts')
         ? [{ key: 'contacts', label: 'Contacts', href: `/dashboard/websites/${siteName}/contacts` }]
         : []),
@@ -74,7 +79,7 @@ export default function SiteOverviewPage() {
               <div>
                 <p className="text-sm uppercase tracking-[0.24em] text-brand-500">Website overview</p>
                 <h1 className="mt-3 text-3xl font-semibold text-slate-900">{site?.label ?? params.site}</h1>
-                <p className="mt-2 text-sm text-slate-600">Review the current collections and jump into the feature pages for this site.</p>
+                <p className="mt-2 text-sm text-slate-600">Manage pages, collections, and other website-specific administration tools.</p>
               </div>
               <div className="rounded-full bg-slate-100 px-4 py-2 text-sm font-semibold text-slate-700">{site?.status ?? 'Loading...'}</div>
             </div>
@@ -96,28 +101,22 @@ export default function SiteOverviewPage() {
           </div>
 
           <div className="space-y-4">
-            <h2 className="text-xl font-semibold text-slate-900">Available pages</h2>
-            <div className="grid gap-4 sm:grid-cols-3">
-              {pageActions.map((action) => {
-                const available = site?.availableCollections.includes(action.key) ?? true;
-                return (
-                  <Link
-                    key={action.key}
-                    href={available ? action.href : '#'}
-                    className={`rounded-[1.5rem] border px-5 py-6 text-center text-sm font-semibold transition ${
-                      available
-                        ? 'border-brand-200 bg-brand-50 text-brand-700 hover:border-brand-300 hover:bg-brand-100'
-                        : 'cursor-not-allowed border-slate-200 bg-slate-50 text-slate-400'
-                    }`}
-                    aria-disabled={!available}
-                  >
-                    {action.label}
-                    <div className="mt-2 text-xs font-normal text-slate-500">
-                      {available ? 'Open page' : 'Not available'}
-                    </div>
-                  </Link>
-                );
-              })}
+            <h2 className="text-xl font-semibold text-slate-900">Available site pages</h2>
+            <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+              {pageActions.map((action) => (
+                <Link
+                  key={action.key}
+                  href={action.href}
+                  className="rounded-[1.5rem] border border-slate-200 bg-white p-6 text-left text-sm font-semibold transition hover:-translate-y-0.5 hover:border-brand-300 hover:bg-brand-50"
+                >
+                  <div className="text-slate-900">{action.label}</div>
+                  <div className="mt-2 text-xs font-normal text-slate-500">
+                    {action.label === 'Collections'
+                      ? 'Browse database collections and manage records.'
+                      : `Open the ${action.label.toLowerCase()} page for this website.`}
+                  </div>
+                </Link>
+              ))}
             </div>
           </div>
         </>

@@ -2,7 +2,8 @@
 
 import Link from 'next/link';
 import { useEffect, useMemo, useState } from 'react';
-import { useParams, usePathname } from 'next/navigation';
+import { useParams, usePathname, useRouter } from 'next/navigation';
+import { fetchWithAuthRedirect } from 'lib/fetch-client';
 
 type SiteInfo = {
   db: string;
@@ -21,25 +22,34 @@ export default function SiteLayout({ children }: { children: React.ReactNode }) 
   const pathname = usePathname();
   const [siteInfo, setSiteInfo] = useState<SiteInfo | null>(null);
 
+  const router = useRouter();
+
   useEffect(() => {
     if (!siteName) return;
 
     async function loadSite() {
-      const response = await fetch(`/api/dashboard/websites/${siteName}`, {
-        credentials: 'include',
-      });
+      const response = await fetchWithAuthRedirect(router, `/api/dashboard/websites/${siteName}`);
+      if (response.status === 401) return;
       if (!response.ok) return;
       const data = await response.json();
       setSiteInfo(data.site ?? null);
     }
 
     loadSite();
-  }, [siteName]);
+  }, [siteName, router]);
 
   const basePath = `/dashboard/websites/${siteName}`;
   const tabs = useMemo(
     () => [
       { href: basePath, label: 'Overview', visible: true },
+      { href: `${basePath}/manage-services`, label: 'Manage services', visible: true },
+      { href: `${basePath}/manage-products`, label: 'Manage products', visible: true },
+      { href: `${basePath}/manage-boutique`, label: 'Manage boutique', visible: true },
+      { href: `${basePath}/manage-gallery`, label: 'Manage gallery', visible: true },
+      { href: `${basePath}/manage-entreprise-informations`, label: 'Entreprise informations', visible: true },
+      { href: `${basePath}/manage-contact-submissions`, label: 'Contact submissions', visible: true },
+      { href: `${basePath}/manage-report-tickets`, label: 'Report tickets', visible: true },
+      ...(siteName === 'atlanticdunes' ? [{ href: '/dashboard/atlanticdunes', label: 'Collections', visible: true }] : []),
       ...(siteInfo?.availableCollections.includes('contacts')
         ? [{ href: `${basePath}/contacts`, label: 'Contacts', visible: true }]
         : []),
@@ -50,7 +60,7 @@ export default function SiteLayout({ children }: { children: React.ReactNode }) 
         ? [{ href: `${basePath}/users`, label: 'Users', visible: true }]
         : []),
     ],
-    [basePath, siteInfo],
+    [basePath, siteInfo, siteName],
   );
 
   return (
