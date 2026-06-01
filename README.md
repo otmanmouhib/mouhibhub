@@ -1,6 +1,6 @@
-# MouhibHub Dashboard
+# MBHUB CMS Dashboard
 
-A modern Next.js dashboard for MBHUB / MOUHIBHUB with:
+A modern Next.js dashboard for MBHUB CMS with:
 
 - Mobile-first responsive design
 - Login system with secure token cookie
@@ -35,5 +35,5 @@ npm run seed
 
 The seed script creates the admin user in the `mouhibhub` database:
 
-- `admin@mouhibhub.com`
+- `admin@mnhub.com`
 - `ChangeMe123!`

@@ -17,8 +17,8 @@ const websites = [
   },
   {
     db: 'mouhibhub',
-    label: 'MBHUB',
-    url: 'mouhibhub.com',
+    label: 'MBHUB CMS',
+    url: 'mnhub.com',
     status: 'Live',
   },
 ];

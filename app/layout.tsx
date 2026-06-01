@@ -4,8 +4,8 @@ import 'sonner/dist/styles.css';
 import { SonnerProvider } from '../components/sonner-provider';
 
 export const metadata: Metadata = {
-  title: 'MouhibHub',
-  description: 'Professional dashboard for MouhibHub contact submissions.',
+  title: 'MBHUB CMS',
+  description: 'MBHUB CMS for AtlanticDunes website clients and membership-based website management.',
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

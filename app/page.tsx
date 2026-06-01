@@ -7,15 +7,15 @@ export default function Home() {
         <div className="grid gap-12 lg:grid-cols-[1.1fr_0.9fr] lg:items-center">
           <div className="space-y-8">
             <div className="inline-flex items-center gap-3 rounded-full bg-brand-500/10 px-5 py-3 text-sm text-brand-100 shadow-sm shadow-brand-500/20">
-              <span className="font-semibold">MBHUB</span>
-              <span className="text-slate-300">MOUHIBHUB Enterprise Dashboard</span>
+              <span className="font-semibold">MBHUB CMS</span>
+              <span className="text-slate-300">AtlanticDunes CMS for website clients</span>
             </div>
             <div className="max-w-3xl space-y-6">
               <h1 className="text-4xl font-semibold tracking-tight text-white sm:text-5xl">
                 A professional admin dashboard for managing contacts and users across your brands.
               </h1>
               <p className="text-lg leading-8 text-slate-400">
-                Secure login, polished enterprise design, and data visibility from Atlantic Dunes and AdroBioFarm. Built for modern operations and mobile-first workflows.
+                MBHUB CMS is the invite-only AtlanticDunes client portal for premium website data management and elite membership services. Join the exclusive MBHUB membership to unlock WhatsApp alerts, AI-guided contact and report ticket workflows, and powerful SaaS-driven website automation reserved for discerning brands.
               </p>
             </div>
             <div className="flex flex-col gap-4 sm:flex-row">

@@ -25,9 +25,9 @@ export default function DashboardShell({ children }: { children: React.ReactNode
             <div className="space-y-8">
               <div className="space-y-4">
                 <div className="inline-flex items-center gap-2 rounded-full bg-brand-50 px-3 py-2 text-sm font-semibold text-brand-700 shadow-sm">
-                  <span>MBHUB</span>
+                  <span>MBHUB CMS</span>
                 </div>
-                <p className="text-sm text-slate-600">A unified, polished admin experience with clear light design.</p>
+                <p className="text-sm text-slate-600">A unified, polished admin experience for Atlantic Dunes website client management.</p>
               </div>
 
               <nav className="space-y-2">
@@ -66,7 +66,7 @@ export default function DashboardShell({ children }: { children: React.ReactNode
                 <line x1="3" y1="18" x2="21" y2="18" />
               </svg>
             </button>
-            <span className="text-sm font-semibold text-slate-900">MBHUB</span>
+            <span className="text-sm font-semibold text-slate-900">MBHUB CMS</span>
           </div>
 
           <main className="p-6">{children}</main>

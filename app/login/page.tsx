@@ -39,9 +39,9 @@ export default function LoginPage() {
         <div className="grid gap-10 rounded-[2rem] border border-slate-800 bg-slate-900/90 p-8 shadow-2xl shadow-slate-950/50 backdrop-blur-xl lg:grid-cols-[1.2fr_0.8fr] lg:p-10">
           <div className="space-y-6">
             <div className="rounded-3xl border border-slate-800 bg-slate-950/80 p-6">
-              <p className="text-xs uppercase tracking-[0.4em] text-brand-300">MBHUB / MOUHIBHUB</p>
-              <h1 className="mt-3 text-3xl font-semibold text-white sm:text-4xl">Secure enterprise dashboard access</h1>
-              <p className="mt-4 text-slate-400">Manage contact submissions and admin users with a clean, responsive experience designed for business operations.</p>
+              <p className="text-xs uppercase tracking-[0.4em] text-brand-300">MBHUB CMS</p>
+              <h1 className="mt-3 text-3xl font-semibold text-white sm:text-4xl">AtlanticDunes CMS for website clients</h1>
+              <p className="mt-4 text-slate-400">MBHUB CMS gives Atlantic Dunes clients a premium membership portal to manage website data, contact workflows, report tickets, AI-powered automation, WhatsApp alerts, and exclusive cloud SaaS capabilities.</p>
             </div>
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="rounded-3xl border border-slate-800 bg-slate-950/80 p-5">
