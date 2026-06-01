@@ -24,6 +24,8 @@ type Props = {
   collectionName: string;
   mode: 'create' | 'edit';
   itemId?: string;
+  siteName?: string;
+  apiPrefix?: string;
 };
 
 type FormData = Record<string, any>;
@@ -98,8 +100,10 @@ function normalizeValue(value: any, field: AtlanticDunesField) {
   return value;
 }
 
-export default function AtlanticDunesForm({ collectionName, mode, itemId }: Props) {
+export default function AtlanticDunesForm({ collectionName, mode, itemId, siteName, apiPrefix: apiPrefixOverride }: Props) {
   const router = useRouter();
+  const effectiveSiteName = siteName ?? 'atlanticdunes';
+  const apiPrefix = apiPrefixOverride ?? `/api/${effectiveSiteName}`;
   const schema = getCollectionSchema(collectionName);
   const [formData, setFormData] = useState<FormData>({});
   const [relatedOptions, setRelatedOptions] = useState<RelatedOptions>({});
@@ -165,7 +169,7 @@ export default function AtlanticDunesForm({ collectionName, mode, itemId }: Prop
       }
       setLoading(true);
       try {
-        const response = await fetchWithAuthRedirect(router, `/api/atlanticdunes/${collectionName}/${encodeURIComponent(itemId)}`, {
+        const response = await fetchWithAuthRedirect(router, `${apiPrefix}/${collectionName}/${encodeURIComponent(itemId)}`, {
           credentials: 'include',
         });
         if (!response.ok) {
@@ -202,7 +206,7 @@ export default function AtlanticDunesForm({ collectionName, mode, itemId }: Prop
     await Promise.all(
       relationCollections.map(async (rel) => {
         try {
-          const response = await fetchWithAuthRedirect(router, `/api/atlanticdunes/related/${rel}`, { credentials: 'include' });
+          const response = await fetchWithAuthRedirect(router, `${apiPrefix}/related/${rel}`, { credentials: 'include' });
           if (!response.ok) {
             values[rel] = [];
             return;
@@ -288,7 +292,7 @@ export default function AtlanticDunesForm({ collectionName, mode, itemId }: Prop
         uploadFormData.append('labels', item.label);
       });
 
-      const response = await fetchWithAuthRedirect(router, '/api/atlanticdunes/images', {
+      const response = await fetchWithAuthRedirect(router, `${apiPrefix}/images`, {
         method: 'POST',
         body: uploadFormData,
         credentials: 'include',
@@ -346,7 +350,7 @@ export default function AtlanticDunesForm({ collectionName, mode, itemId }: Prop
     setMessage(null);
 
     try {
-      const response = await fetchWithAuthRedirect(router, `/api/atlanticdunes/images/${encodeURIComponent(imageId)}`, {
+      const response = await fetchWithAuthRedirect(router, `${apiPrefix}/images/${encodeURIComponent(imageId)}`, {
         method: 'DELETE',
         credentials: 'include',
       });
@@ -394,7 +398,7 @@ export default function AtlanticDunesForm({ collectionName, mode, itemId }: Prop
       const uploadFormData = new FormData();
       uploadFormData.append('image', file);
 
-      const response = await fetchWithAuthRedirect(router, `/api/atlanticdunes/images/${encodeURIComponent(imageId)}`, {
+      const response = await fetchWithAuthRedirect(router, `${apiPrefix}/images/${encodeURIComponent(imageId)}`, {
         method: 'PATCH',
         body: uploadFormData,
         credentials: 'include',
@@ -447,7 +451,7 @@ export default function AtlanticDunesForm({ collectionName, mode, itemId }: Prop
         formData.append('label', imageLabel);
       }
 
-      const response = await fetchWithAuthRedirect(router, `/api/atlanticdunes/images/${encodeURIComponent(imageId)}`, {
+      const response = await fetchWithAuthRedirect(router, `${apiPrefix}/images/${encodeURIComponent(imageId)}`, {
         method: 'PATCH',
         body: formData,
         credentials: 'include',
@@ -555,7 +559,7 @@ export default function AtlanticDunesForm({ collectionName, mode, itemId }: Prop
         payload.description = description;
       }
 
-      const response = await fetchWithAuthRedirect(router, `/api/atlanticdunes/${field.relation.collection}`, {
+      const response = await fetchWithAuthRedirect(router, `${apiPrefix}/${field.relation.collection}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
@@ -640,7 +644,7 @@ export default function AtlanticDunesForm({ collectionName, mode, itemId }: Prop
       payload._id = 'main';
     }
     try {
-      const url = mode === 'create' ? `/api/atlanticdunes/${collectionName}` : `/api/atlanticdunes/${collectionName}/${encodeURIComponent(itemId ?? String(formData._id))}`;
+      const url = mode === 'create' ? `${apiPrefix}/${collectionName}` : `${apiPrefix}/${collectionName}/${encodeURIComponent(itemId ?? String(formData._id))}`;
       const method = mode === 'create' ? 'POST' : 'PUT';
       const response = await fetchWithAuthRedirect(router, url, {
         method,
@@ -656,7 +660,8 @@ export default function AtlanticDunesForm({ collectionName, mode, itemId }: Prop
       toast.success(successMessage);
       setMessage(successMessage);
       if (mode === 'create' && result.document?._id) {
-        router.push(`/dashboard/atlanticdunes/${collectionName}/${encodeURIComponent(result.document._id)}`);
+        const dashboardPrefix = siteName ? `/dashboard/websites/${siteName}` : '/dashboard/atlanticdunes';
+        router.push(`${dashboardPrefix}/${collectionName}/${encodeURIComponent(result.document._id)}`);
       }
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Unable to save record';
@@ -825,7 +830,7 @@ export default function AtlanticDunesForm({ collectionName, mode, itemId }: Prop
                     <div className="grid gap-4 lg:grid-cols-[1.5fr_1fr]">
                       <div className="relative overflow-hidden rounded-3xl border border-slate-200 bg-slate-100">
                         <img
-                          src={`/api/images/${encodeURIComponent(selectedImageOption.value)}`}
+                          src={`${apiPrefix}/images/${encodeURIComponent(selectedImageOption.value)}`}
                           alt={selectedImageOption.label}
                           className="h-40 w-full object-cover"
                         />
@@ -986,7 +991,7 @@ export default function AtlanticDunesForm({ collectionName, mode, itemId }: Prop
                         >
                           <div className="relative h-40 w-full overflow-hidden bg-slate-100">
                             <img
-                              src={`/api/images/${encodeURIComponent(option.value)}`}
+                              src={`${apiPrefix}/images/${encodeURIComponent(option.value)}`}
                               alt={option.label}
                               className="h-full w-full object-cover transition duration-200 group-hover:scale-105"
                             />
@@ -1161,7 +1166,7 @@ export default function AtlanticDunesForm({ collectionName, mode, itemId }: Prop
                           <div key={option.value} className="rounded-3xl border border-slate-200 bg-white p-3">
                             <div className="relative h-32 overflow-hidden rounded-3xl bg-slate-100">
                               <img
-                                src={`/api/images/${encodeURIComponent(option.value)}`}
+                                src={`${apiPrefix}/images/${encodeURIComponent(option.value)}`}
                                 alt={option.label}
                                 className="h-full w-full object-cover"
                               />
@@ -1217,7 +1222,7 @@ export default function AtlanticDunesForm({ collectionName, mode, itemId }: Prop
                           >
                             <div className="relative h-40 w-full overflow-hidden bg-slate-100">
                               <img
-                                src={`/api/images/${encodeURIComponent(option.value)}`}
+                                src={`${apiPrefix}/images/${encodeURIComponent(option.value)}`}
                                 alt={option.label}
                                 className="h-full w-full object-cover transition duration-200 group-hover:scale-105"
                               />
@@ -1388,10 +1393,10 @@ export default function AtlanticDunesForm({ collectionName, mode, itemId }: Prop
           </div>
           <button
             type="button"
-            onClick={() => router.push('/dashboard/atlanticdunes')}
+            onClick={() => router.push(siteName ? `/dashboard/websites/${siteName}` : '/dashboard/atlanticdunes')}
             className="rounded-3xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-100"
           >
-            Back to collections
+            Back to site overview
           </button>
         </div>
       </div>
