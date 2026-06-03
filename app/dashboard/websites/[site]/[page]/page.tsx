@@ -32,16 +32,26 @@ const pageMetadata: Record<string, { title: string; description: string }> = {
     title: 'Manage contact submissions',
     description: 'Review incoming contact form submissions and follow up with visitors.',
   },
+  'manage-news': {
+    title: 'Manage news articles',
+    description: 'Create, edit, and publish news articles for this website.',
+  },
+  'manage-news-categories': {
+    title: 'Manage news categories',
+    description: 'Create and organize news categories for articles.',
+  },
   'manage-report-tickets': {
     title: 'Manage report tickets',
     description: 'Track and respond to report tickets raised by website users.',
   },
 };
 
-const collectionMap: Record<string, 'products' | 'services' | 'boutique'> = {
+const collectionMap: Record<string, 'products' | 'services' | 'boutique' | 'news' | 'newsCategories'> = {
   'manage-products': 'products',
   'manage-services': 'services',
   'manage-boutique': 'boutique',
+  'manage-news': 'news',
+  'manage-news-categories': 'newsCategories',
 };
 
 type ItemRecord = {
@@ -84,12 +94,16 @@ function formatMoney(price: number | string | undefined, currency: string | unde
 function segmentLabel(collection: string) {
   if (collection === 'services') return 'Service';
   if (collection === 'boutique') return 'Boutique item';
+  if (collection === 'newsCategories') return 'News category';
+  if (collection === 'news') return 'News article';
   return 'Product';
 }
 
 function collectionDescription(collection: string) {
   if (collection === 'services') return 'Service entries for your website.';
   if (collection === 'boutique') return 'Boutique products and boutique-specific content.';
+  if (collection === 'newsCategories') return 'Categories used to organize news articles.';
+  if (collection === 'news') return 'News articles and announcements published on the website.';
   return 'Product listings with pricing and categories.';
 }
 
@@ -116,6 +130,7 @@ export default function SiteManagementPage() {
   const [imageMap, setImageMap] = useState<RelatedMap>({});
   const [poleMap, setPoleMap] = useState<RelatedMap>({});
   const [domainMap, setDomainMap] = useState<RelatedMap>({});
+  const [categoryMap, setCategoryMap] = useState<RelatedMap>({});
   const [galleryImages, setGalleryImages] = useState<ImageItem[]>([]);
   const [galleryFiles, setGalleryFiles] = useState<FileList | null>(null);
   const [contacts, setContacts] = useState<ContactRecord[]>([]);
@@ -245,8 +260,13 @@ export default function SiteManagementPage() {
     if (collection) {
       loadItems();
       loadRelated('images', setImageMap, 'filename');
-      loadRelated('poles', setPoleMap, 'label');
-      loadRelated('domains', setDomainMap, 'label');
+      if (collection === 'news') {
+        loadRelated('newsCategories', setCategoryMap, 'label');
+      }
+      if (['products', 'services', 'boutique'].includes(collection)) {
+        loadRelated('poles', setPoleMap, 'label');
+        loadRelated('domains', setDomainMap, 'label');
+      }
     }
     if (isGallery) {
       loadGallery();
@@ -345,6 +365,9 @@ export default function SiteManagementPage() {
     if (collectionType === 'boutique') {
       return item.availability ? <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold uppercase tracking-[0.24em] text-slate-600">{item.availability}</span> : null;
     }
+    if (collectionType === 'news') {
+      return item.status ? <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold uppercase tracking-[0.24em] text-slate-600">{item.status}</span> : null;
+    }
     return item.unitPrice ? (
       <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold uppercase tracking-[0.24em] text-slate-600">
         {formatMoney(item.unitPrice, item.currency)}
@@ -393,6 +416,43 @@ export default function SiteManagementPage() {
             <div className="rounded-3xl bg-slate-50 p-4 text-sm text-slate-700">
               <p className="font-semibold text-slate-900">Stock</p>
               <p className="mt-2">{item.inStock ? 'In stock' : 'Out of stock'}</p>
+            </div>
+          ) : null}
+        </div>
+      );
+    }
+
+    if (collectionType === 'news') {
+      return (
+        <div className="grid gap-3">
+          <div className="rounded-3xl bg-slate-50 p-4 text-sm text-slate-700">
+            <p className="font-semibold text-slate-900">Summary</p>
+            <p className="mt-2">{item.summary ?? item.excerpt ?? 'No summary available.'}</p>
+          </div>
+          <div className="grid gap-3 sm:grid-cols-2">
+            {item.date ? (
+              <div className="rounded-3xl bg-slate-50 p-4 text-sm text-slate-700">
+                <p className="font-semibold text-slate-900">Display date</p>
+                <p className="mt-2">{new Date(item.date).toLocaleDateString()}</p>
+              </div>
+            ) : null}
+            {item.publishedAt ? (
+              <div className="rounded-3xl bg-slate-50 p-4 text-sm text-slate-700">
+                <p className="font-semibold text-slate-900">Published at</p>
+                <p className="mt-2">{new Date(item.publishedAt).toLocaleDateString()}</p>
+              </div>
+            ) : null}
+          </div>
+          {item.categoryId ? (
+            <div className="rounded-3xl bg-slate-50 p-4 text-sm text-slate-700">
+              <p className="font-semibold text-slate-900">Category</p>
+              <p className="mt-2">{categoryMap[item.categoryId] ?? item.categoryId}</p>
+            </div>
+          ) : null}
+          {Array.isArray(item.tags) && item.tags.length > 0 ? (
+            <div className="rounded-3xl bg-slate-50 p-4 text-sm text-slate-700">
+              <p className="font-semibold text-slate-900">Tags</p>
+              <p className="mt-2">{item.tags.join(', ')}</p>
             </div>
           ) : null}
         </div>

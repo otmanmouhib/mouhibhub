@@ -1,11 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { Filter, ObjectId } from 'mongodb';
+import { Filter, GridFSBucket, ObjectId } from 'mongodb';
 import { verifyAuthToken } from '../../../../../lib/auth';
 import { getSiteDb, isSupportedSite } from '../../../../../lib/site';
 
 function unauthorized() {
   return new NextResponse(JSON.stringify({ message: 'Unauthorized' }), {
     status: 401,
+    headers: { 'Content-Type': 'application/json' },
+  });
+}
+
+function notFound(message = 'Not found') {
+  return new NextResponse(JSON.stringify({ message }), {
+    status: 404,
     headers: { 'Content-Type': 'application/json' },
   });
 }
@@ -31,6 +38,68 @@ function buildImageFilter(id: string): Filter<any> {
     return { $or: [{ _id: objectId }, { _id: id }] } as Filter<any>;
   }
   return { _id: id } as Filter<any>;
+}
+
+function buildContentBuffer(data: any): Buffer {
+  if (Buffer.isBuffer(data)) return data;
+  if (data?.buffer) return Buffer.from(data.buffer);
+  return Buffer.from(data);
+}
+
+function resolveRedirectUrl(request: NextRequest, src: string): string | null {
+  const trimmedSrc = src.trim();
+  if (!trimmedSrc) return null;
+  try {
+    return new URL(trimmedSrc, request.url).href;
+  } catch {
+    return null;
+  }
+}
+
+export async function GET(request: NextRequest, context: { params: Promise<{ site: string; id: string }> }) {
+  const { site, id } = await context.params;
+  const token = request.cookies.get('mouhibhub-auth')?.value ?? null;
+  if (!token || !verifyAuthToken(token)) {
+    return unauthorized();
+  }
+
+  if (!isSupportedSite(site)) {
+    return notFound('Website not found');
+  }
+
+  const db = await getSiteDb(site);
+  const filter = buildImageFilter(id);
+  const document = await db.collection('images').findOne(filter);
+  if (!document) {
+    return notFound('Image not found');
+  }
+
+  if (typeof document.src === 'string' && document.src.trim() !== '') {
+    const redirectUrl = resolveRedirectUrl(request, document.src);
+    if (redirectUrl) {
+      return NextResponse.redirect(redirectUrl);
+    }
+  }
+
+  if (document.data) {
+    const buffer = buildContentBuffer(document.data);
+    return new NextResponse(buffer, {
+      headers: { 'Content-Type': document.contentType || 'application/octet-stream' },
+    });
+  }
+
+  if (document.fileId) {
+    const fileId = resolveObjectId(String(document.fileId));
+    if (fileId) {
+      const bucket = new GridFSBucket(await getSiteDb(site), { bucketName: 'images' });
+      const stream = bucket.openDownloadStream(fileId);
+      return new NextResponse(stream as unknown as BodyInit, {
+        headers: { 'Content-Type': document.contentType || 'application/octet-stream' },
+      });
+    }
+  }
+
+  return notFound('Image data not available.');
 }
 
 export async function DELETE(request: NextRequest, context: { params: Promise<{ site: string; id: string }> }) {

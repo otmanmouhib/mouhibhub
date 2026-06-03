@@ -45,6 +45,8 @@ export default function SiteLayout({ children }: { children: React.ReactNode }) 
       { href: `${basePath}/manage-services`, label: 'Manage services', visible: true },
       { href: `${basePath}/manage-products`, label: 'Manage products', visible: true },
       { href: `${basePath}/manage-boutique`, label: 'Manage boutique', visible: true },
+      { href: `${basePath}/manage-news`, label: 'Manage news', visible: true },
+      { href: `${basePath}/manage-news-categories`, label: 'Manage news categories', visible: true },
       { href: `${basePath}/manage-gallery`, label: 'Manage gallery', visible: true },
       { href: `${basePath}/manage-entreprise-informations`, label: 'Entreprise informations', visible: true },
       { href: `${basePath}/manage-contact-submissions`, label: 'Contact submissions', visible: true },

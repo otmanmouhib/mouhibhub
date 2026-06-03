@@ -3,10 +3,12 @@
 import { useParams } from 'next/navigation';
 import AtlanticDunesForm from 'components/atlanticdunes-form';
 
-const pageToCollectionMap: Record<string, 'products' | 'services' | 'boutique'> = {
+const pageToCollectionMap: Record<string, 'products' | 'services' | 'boutique' | 'news' | 'newsCategories'> = {
   'manage-products': 'products',
   'manage-services': 'services',
   'manage-boutique': 'boutique',
+  'manage-news': 'news',
+  'manage-news-categories': 'newsCategories',
 };
 
 export default function SiteCollectionCreatePage() {

@@ -148,6 +148,7 @@ Collection: newsCategories
   - createdAt: string
   - description: string
   - id: string
+  
   - label: string
   - updatedAt: string
 

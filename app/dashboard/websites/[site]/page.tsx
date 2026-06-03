@@ -51,6 +51,8 @@ export default function SiteOverviewPage() {
       { key: 'manage-services', label: 'Manage services', href: `/dashboard/websites/${siteName}/manage-services` },
       { key: 'manage-products', label: 'Manage products', href: `/dashboard/websites/${siteName}/manage-products` },
       { key: 'manage-boutique', label: 'Manage boutique', href: `/dashboard/websites/${siteName}/manage-boutique` },
+      { key: 'manage-news', label: 'Manage news', href: `/dashboard/websites/${siteName}/manage-news` },
+      { key: 'manage-news-categories', label: 'Manage news categories', href: `/dashboard/websites/${siteName}/manage-news-categories` },
       { key: 'manage-gallery', label: 'Manage gallery', href: `/dashboard/websites/${siteName}/manage-gallery` },
       { key: 'manage-entreprise-informations', label: 'Manage entreprise informations', href: `/dashboard/websites/${siteName}/manage-entreprise-informations` },
       { key: 'manage-contact-submissions', label: 'Manage contact submissions', href: `/dashboard/websites/${siteName}/manage-contact-submissions` },
