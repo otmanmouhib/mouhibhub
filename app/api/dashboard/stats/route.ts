@@ -12,7 +12,7 @@ export async function GET(request: NextRequest) {
     });
   }
 
-  const sources = ['atlanticdunes', 'adrobiofarm', 'mouhibhub'];
+  const sources = ['atlanticdunes', 'adrobiofarm'];
 
   const counts = await Promise.all(
     sources.map(async (dbName) => {

@@ -1,6 +1,6 @@
 import { getDb } from './mongodb';
 
-export const supportedSites = ['atlanticdunes', 'adrobiofarm', 'mouhibhub'] as const;
+export const supportedSites = ['atlanticdunes', 'adrobiofarm'] as const;
 export type SiteName = (typeof supportedSites)[number];
 
 export function isSupportedSite(site: string): site is SiteName {

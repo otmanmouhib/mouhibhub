@@ -686,7 +686,7 @@ export default function AtlanticDunesForm({ collectionName, mode, itemId, siteNa
             id={field.name}
             value={String(value ?? '')}
             onChange={(event) => updateField(field.name, field.type === 'number' ? Number(event.target.value) : event.target.value)}
-            className="mt-2 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-brand-400 focus:ring-2 focus:ring-brand-500/20"
+            className="mt-3 w-full rounded-lg border border-slate-200/60 bg-white px-4 py-2.5 text-sm text-slate-900 outline-none transition focus:border-brand-400 focus:ring-2 focus:ring-brand-500/20"
             placeholder={field.placeholder}
           />
         );
@@ -697,7 +697,7 @@ export default function AtlanticDunesForm({ collectionName, mode, itemId, siteNa
             id={field.name}
             value={String(value ?? '')}
             readOnly
-            className="mt-2 w-full rounded-2xl border border-slate-200 bg-slate-100 px-4 py-3 text-sm text-slate-500 outline-none"
+            className="mt-3 w-full rounded-lg border border-slate-200/60 bg-slate-50 px-4 py-2.5 text-sm text-slate-500 outline-none"
             placeholder="Auto-generated from title or label"
           />
         );
@@ -709,7 +709,7 @@ export default function AtlanticDunesForm({ collectionName, mode, itemId, siteNa
             value={String(value ?? '')}
             onChange={(event) => updateField(field.name, event.target.value)}
             rows={field.name === 'description' ? 6 : 4}
-            className="mt-2 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-brand-400 focus:ring-2 focus:ring-brand-500/20"
+            className="mt-3 w-full rounded-lg border border-slate-200/60 bg-white px-4 py-2.5 text-sm text-slate-900 outline-none transition focus:border-brand-400 focus:ring-2 focus:ring-brand-500/20"
             placeholder={field.placeholder}
           />
         );
@@ -754,7 +754,7 @@ export default function AtlanticDunesForm({ collectionName, mode, itemId, siteNa
               id={field.name}
               value={String(value ?? '')}
               onChange={(event) => updateField(field.name, event.target.value)}
-              className="mt-2 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-brand-400 focus:ring-2 focus:ring-brand-500/20"
+              className="mt-3 w-full rounded-lg border border-slate-200/60 bg-white px-4 py-2.5 text-sm text-slate-900 outline-none transition focus:border-brand-400 focus:ring-2 focus:ring-brand-500/20"
             >
               <option value="">Select {field.label}</option>
               {relationOptions.map((option) => (
@@ -764,22 +764,22 @@ export default function AtlanticDunesForm({ collectionName, mode, itemId, siteNa
               ))}
             </select>
             {['poles', 'domains'].includes(field.relation?.collection ?? '') ? (
-              <div className="mt-4 rounded-3xl border border-slate-200 bg-slate-50 p-4">
+              <div className="mt-4 rounded-xl border border-slate-200/60 bg-slate-50 p-4">
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                   <div>
                     <p className="text-sm font-semibold text-slate-900">Create new {field.label.toLowerCase()}</p>
-                    <p className="text-sm text-slate-500">Add a new {field.label.toLowerCase()} without leaving this form.</p>
+                    <p className="text-xs text-slate-500">Add a new {field.label.toLowerCase()} without leaving this form.</p>
                   </div>
                   <button
                     type="button"
                     onClick={() => toggleRelationCreate(field.name, !(relationCreateOpen[field.name] ?? false))}
-                    className="rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm font-semibold text-slate-900 transition hover:bg-slate-100"
+                    className="rounded-lg border border-slate-200/60 bg-white px-4 py-2 text-sm font-medium text-slate-900 shadow-sm transition hover:bg-slate-50"
                   >
                     {relationCreateOpen[field.name] ? `Cancel` : `New ${field.label}`}
                   </button>
                 </div>
                 {relationCreateOpen[field.name] ? (
-                  <div className="mt-4 space-y-4 rounded-3xl border border-slate-200 bg-white p-4">
+                  <div className="mt-4 space-y-4 rounded-xl border border-slate-200/60 bg-white p-4">
                     <div>
                       <label className="text-sm font-medium text-slate-900">Label</label>
                       <input
@@ -789,7 +789,7 @@ export default function AtlanticDunesForm({ collectionName, mode, itemId, siteNa
                           label: event.target.value,
                           slug: slugify(event.target.value),
                         })}
-                        className="mt-2 w-full rounded-2xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-900 outline-none transition focus:border-brand-400 focus:ring-2 focus:ring-brand-500/20"
+                        className="mt-2 w-full rounded-lg border border-slate-200/60 bg-slate-50 px-3 py-2 text-sm text-slate-900 outline-none transition focus:border-brand-400 focus:ring-2 focus:ring-brand-500/20"
                       />
                     </div>
                     <div>
@@ -798,7 +798,7 @@ export default function AtlanticDunesForm({ collectionName, mode, itemId, siteNa
                         type="text"
                         value={relationDrafts[field.name]?.slug ?? ''}
                         readOnly
-                        className="mt-2 w-full rounded-2xl border border-slate-200 bg-slate-100 px-3 py-2 text-sm text-slate-500 outline-none"
+                        className="mt-2 w-full rounded-lg border border-slate-200/60 bg-slate-100 px-3 py-2 text-sm text-slate-500 outline-none"
                         placeholder="Auto-generated from label"
                       />
                     </div>
@@ -808,14 +808,14 @@ export default function AtlanticDunesForm({ collectionName, mode, itemId, siteNa
                         value={relationDrafts[field.name]?.description ?? ''}
                         onChange={(event) => updateRelationDraft(field.name, { description: event.target.value })}
                         rows={3}
-                        className="mt-2 w-full rounded-2xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-900 outline-none transition focus:border-brand-400 focus:ring-2 focus:ring-brand-500/20"
+                        className="mt-2 w-full rounded-lg border border-slate-200/60 bg-slate-50 px-3 py-2 text-sm text-slate-900 outline-none transition focus:border-brand-400 focus:ring-2 focus:ring-brand-500/20"
                       />
                     </div>
                     <button
                       type="button"
                       onClick={() => createRelatedRecord(field)}
                       disabled={saving}
-                      className="w-full rounded-2xl bg-brand-600 px-4 py-3 text-sm font-semibold text-white transition hover:bg-brand-700 disabled:cursor-not-allowed disabled:opacity-50"
+                      className="w-full rounded-lg bg-gradient-to-r from-brand-500 to-brand-600 px-4 py-2.5 text-sm font-medium text-white shadow-sm transition-all duration-200 hover:shadow-md disabled:cursor-not-allowed disabled:opacity-50"
                     >
                       Create {field.label}
                     </button>
@@ -824,17 +824,17 @@ export default function AtlanticDunesForm({ collectionName, mode, itemId, siteNa
               </div>
             ) : null}
             {field.relation?.collection === 'images' ? (
-              <div className="mt-4 rounded-3xl border border-slate-200 bg-white p-4 space-y-6">
+              <div className="mt-4 rounded-xl border border-slate-200/60 bg-white p-4 space-y-6">
                 {selectedImageOption ? (
                   <>
                     <div className="grid gap-4 lg:grid-cols-[1.5fr_1fr]">
-                      <div className="relative overflow-hidden rounded-3xl border border-slate-200 bg-slate-100">
+                      <div className="relative overflow-hidden rounded-xl border border-slate-200/60 bg-slate-100">
                         <img
                           src={`${apiPrefix}/images/${encodeURIComponent(selectedImageOption.value)}`}
                           alt={selectedImageOption.label}
                           className="h-40 w-full object-cover"
                         />
-                        <label className="pointer-events-auto absolute right-3 top-3 inline-flex items-center gap-2 rounded-2xl bg-white/90 px-3 py-2 text-sm font-semibold text-slate-900 shadow-sm">
+                        <label className="pointer-events-auto absolute right-3 top-3 inline-flex items-center gap-2 rounded-lg bg-white/90 px-3 py-2 text-xs font-semibold text-slate-900 shadow-sm">
                           <input
                             type="checkbox"
                             checked
@@ -862,9 +862,9 @@ export default function AtlanticDunesForm({ collectionName, mode, itemId, siteNa
                                     },
                                   }));
                                 }}
-                                className="flex-1 rounded-2xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-900 outline-none transition focus:border-brand-400 focus:ring-2 focus:ring-brand-500/20"
+                                className="flex-1 rounded-lg border border-slate-200/60 bg-slate-50 px-3 py-2 text-sm text-slate-900 outline-none transition focus:border-brand-400 focus:ring-2 focus:ring-brand-500/20"
                               />
-                              <span className="flex items-center rounded-2xl border border-slate-200 bg-white px-3 text-sm text-slate-600">{selectedExtension || '.png'}</span>
+                              <span className="flex items-center rounded-lg border border-slate-200/60 bg-white px-3 py-2 text-sm text-slate-600">{selectedExtension || '.png'}</span>
                             </div>
                             <button
                               type="button"
@@ -874,7 +874,7 @@ export default function AtlanticDunesForm({ collectionName, mode, itemId, siteNa
                                 selectedEdit?.label ?? selectedImageOption.label,
                               )}
                               disabled={uploadingImages}
-                              className="rounded-2xl border border-brand-600 bg-brand-600 px-4 py-3 text-sm font-semibold text-white transition hover:bg-brand-700 disabled:cursor-not-allowed disabled:opacity-50"
+                              className="rounded-lg bg-gradient-to-r from-brand-500 to-brand-600 px-4 py-2.5 text-sm font-medium text-white shadow-sm transition-all duration-200 hover:shadow-md disabled:cursor-not-allowed disabled:opacity-50"
                             >
                               Save filename
                             </button>
@@ -882,7 +882,7 @@ export default function AtlanticDunesForm({ collectionName, mode, itemId, siteNa
                               type="button"
                               onClick={() => deleteImageFromLibrary(selectedImageOption.value, field.name)}
                               disabled={uploadingImages}
-                              className="rounded-2xl border border-rose-300 bg-rose-50 px-4 py-3 text-sm font-semibold text-rose-700 transition hover:bg-rose-100 disabled:cursor-not-allowed disabled:opacity-50"
+                              className="rounded-lg border border-rose-200/60 bg-rose-50 px-4 py-2.5 text-sm font-medium text-rose-700 shadow-sm transition hover:bg-rose-100 disabled:cursor-not-allowed disabled:opacity-50"
                             >
                               Delete image
                             </button>
@@ -892,15 +892,15 @@ export default function AtlanticDunesForm({ collectionName, mode, itemId, siteNa
                     </div>
                   </>
                 ) : (
-                  <div className="rounded-3xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-600">
-                    No image selected.
+                  <div className="rounded-xl border border-slate-200/60 bg-slate-50 p-6 text-center">
+                    <p className="text-sm text-slate-500">No image selected</p>
                   </div>
                 )}
 
                 <div>
                   <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                    <label className="inline-flex cursor-pointer items-center gap-2 rounded-2xl bg-brand-600 px-4 py-3 text-sm font-semibold text-white transition hover:bg-brand-700">
-                      {uploadingImages ? 'Queued…' : 'Upload an image'}
+                    <label className="inline-flex cursor-pointer items-center gap-2 rounded-lg bg-gradient-to-r from-brand-500 to-brand-600 px-4 py-2.5 text-sm font-medium text-white shadow-sm transition-all duration-200 hover:shadow-md">
+                      {uploadingImages ? 'Queued...' : 'Upload an image'}
                       <input
                         type="file"
                         accept="image/*"
@@ -917,26 +917,26 @@ export default function AtlanticDunesForm({ collectionName, mode, itemId, siteNa
                     <button
                       type="button"
                       onClick={() => setGalleryOpenFor(field.name, !galleryVisible)}
-                      className="rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm font-semibold text-slate-900 transition hover:bg-slate-100"
+                      className="rounded-lg border border-slate-200/60 bg-white px-4 py-2.5 text-sm font-medium text-slate-900 shadow-sm transition hover:bg-slate-50"
                     >
                       {galleryVisible ? 'Hide gallery' : 'Open gallery'}
                     </button>
                   </div>
                   {queue.length > 0 ? (
-                    <div className="mt-4 rounded-3xl border border-slate-200 bg-slate-50 p-4">
+                    <div className="mt-4 rounded-xl border border-slate-200/60 bg-slate-50 p-4">
                       <p className="text-sm font-semibold text-slate-900">Pending upload</p>
-                      <p className="text-sm text-slate-500">Edit filename and label before uploading.</p>
+                      <p className="text-xs text-slate-500">Edit filename and label before uploading.</p>
                       <div className="mt-4 space-y-4">
                         {queue.map((item) => (
                           <div key={item.id} className="grid gap-3 sm:grid-cols-[1fr_auto]">
-                            <div className="grid gap-3 rounded-2xl border border-slate-200 bg-white p-3">
+                            <div className="grid gap-3 rounded-lg border border-slate-200/60 bg-white p-3">
                               <div>
                                 <label className="text-sm font-medium text-slate-900">Filename</label>
                                 <input
                                   type="text"
                                   value={item.filename}
                                   onChange={(event) => updateUploadQueueItem(field.name, item.id, { filename: event.target.value })}
-                                  className="mt-2 w-full rounded-2xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-900 outline-none transition focus:border-brand-400 focus:ring-2 focus:ring-brand-500/20"
+                                  className="mt-2 w-full rounded-lg border border-slate-200/60 bg-slate-50 px-3 py-2 text-sm text-slate-900 outline-none transition focus:border-brand-400 focus:ring-2 focus:ring-brand-500/20"
                                 />
                               </div>
                               <div>
@@ -945,14 +945,14 @@ export default function AtlanticDunesForm({ collectionName, mode, itemId, siteNa
                                   type="text"
                                   value={item.label}
                                   onChange={(event) => updateUploadQueueItem(field.name, item.id, { label: event.target.value })}
-                                  className="mt-2 w-full rounded-2xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-900 outline-none transition focus:border-brand-400 focus:ring-2 focus:ring-brand-500/20"
+                                  className="mt-2 w-full rounded-lg border border-slate-200/60 bg-slate-50 px-3 py-2 text-sm text-slate-900 outline-none transition focus:border-brand-400 focus:ring-2 focus:ring-brand-500/20"
                                 />
                               </div>
                             </div>
                             <button
                               type="button"
                               onClick={() => removeUploadQueueItem(field.name, item.id)}
-                              className="rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm font-semibold text-slate-900 transition hover:bg-slate-100"
+                              className="rounded-lg border border-slate-200/60 bg-white px-4 py-2.5 text-sm font-medium text-slate-900 shadow-sm transition hover:bg-slate-50"
                             >
                               Remove
                             </button>
@@ -961,7 +961,7 @@ export default function AtlanticDunesForm({ collectionName, mode, itemId, siteNa
                         <button
                           type="button"
                           onClick={() => uploadPendingImages(field.name)}
-                          className="w-full rounded-2xl bg-brand-600 px-4 py-3 text-sm font-semibold text-white transition hover:bg-brand-700"
+                          className="w-full rounded-lg bg-gradient-to-r from-brand-500 to-brand-600 px-4 py-2.5 text-sm font-medium text-white shadow-sm transition-all duration-200 hover:shadow-md"
                         >
                           Upload queued images
                         </button>
@@ -970,14 +970,14 @@ export default function AtlanticDunesForm({ collectionName, mode, itemId, siteNa
                   ) : null}
                 </div>
                 {galleryVisible ? (
-                  <div className="space-y-4 rounded-3xl border border-slate-200 bg-white p-4">
+                  <div className="space-y-4 rounded-xl border border-slate-200/60 bg-white p-4">
                     <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                       <input
                         type="search"
                         value={imageSearch}
                         onChange={(event) => setImageSearch(event.target.value)}
                         placeholder="Filter gallery by name..."
-                        className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-brand-400 focus:ring-2 focus:ring-brand-500/20 sm:w-64"
+                        className="w-full rounded-lg border border-slate-200/60 bg-slate-50 px-4 py-2.5 text-sm text-slate-900 outline-none transition focus:border-brand-400 focus:ring-2 focus:ring-brand-500/20 sm:w-64"
                       />
                       <p className="text-sm text-slate-500">{filteredOptions.length} available</p>
                     </div>
@@ -987,7 +987,7 @@ export default function AtlanticDunesForm({ collectionName, mode, itemId, siteNa
                           key={option.value}
                           type="button"
                           onClick={() => updateField(field.name, option.value)}
-                          className="group flex flex-col overflow-hidden rounded-[1.75rem] border border-slate-200 bg-slate-50 text-left transition hover:border-brand-300"
+                          className="group flex flex-col overflow-hidden rounded-xl border border-slate-200/60 bg-slate-50 text-left transition hover:border-brand-300"
                         >
                           <div className="relative h-40 w-full overflow-hidden bg-slate-100">
                             <img
@@ -995,7 +995,7 @@ export default function AtlanticDunesForm({ collectionName, mode, itemId, siteNa
                               alt={option.label}
                               className="h-full w-full object-cover transition duration-200 group-hover:scale-105"
                             />
-                            <div className="pointer-events-none absolute right-3 top-3 rounded-2xl bg-white/90 p-2 shadow-sm">
+                            <div className="pointer-events-none absolute right-3 top-3 rounded-lg bg-white/90 p-2 shadow-sm">
                               <input
                                 type="checkbox"
                                 checked={false}
@@ -1015,12 +1015,12 @@ export default function AtlanticDunesForm({ collectionName, mode, itemId, siteNa
                       <p className="text-sm text-slate-500">
                         Showing {filteredOptions.length === 0 ? 0 : currentPage * imagePageSize + 1} – {Math.min((currentPage + 1) * imagePageSize, filteredOptions.length)} of {filteredOptions.length}
                       </p>
-                      <div className="inline-flex items-center gap-2 rounded-3xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700">
+                      <div className="inline-flex items-center gap-2 rounded-lg border border-slate-200/60 bg-slate-50 px-3 py-2 text-sm text-slate-700">
                         <button
                           type="button"
                           onClick={() => setImagePage((page) => Math.max(page - 1, 0))}
                           disabled={currentPage === 0}
-                          className="rounded-full px-3 py-1 transition hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-50"
+                          className="rounded-lg px-3 py-1 font-medium transition hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-50"
                         >
                           Previous
                         </button>
@@ -1029,7 +1029,7 @@ export default function AtlanticDunesForm({ collectionName, mode, itemId, siteNa
                           type="button"
                           onClick={() => setImagePage((page) => Math.min(page + 1, pageCount - 1))}
                           disabled={currentPage >= pageCount - 1}
-                          className="rounded-full px-3 py-1 transition hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-50"
+                          className="rounded-lg px-3 py-1 font-medium transition hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-50"
                         >
                           Next
                         </button>
@@ -1062,12 +1062,12 @@ export default function AtlanticDunesForm({ collectionName, mode, itemId, siteNa
 
         if (isImageGallery) {
           return (
-            <div className="space-y-4 mt-2">
-              <div className="rounded-3xl border border-slate-200 bg-white p-4">
+            <div className="space-y-4 mt-3">
+              <div className="rounded-xl border border-slate-200/60 bg-white p-4">
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                   <div>
                     <p className="text-sm font-semibold text-slate-900">Gallery</p>
-                    <p className="text-sm text-slate-500">Select from uploaded images.</p>
+                    <p className="text-xs text-slate-500">Select from uploaded images.</p>
                   </div>
                   <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
                     <input
@@ -1075,12 +1075,12 @@ export default function AtlanticDunesForm({ collectionName, mode, itemId, siteNa
                       value={imageSearch}
                       onChange={(event) => setImageSearch(event.target.value)}
                       placeholder="Search gallery..."
-                      className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-brand-400 focus:ring-2 focus:ring-brand-500/20 sm:w-64"
+                      className="w-full rounded-lg border border-slate-200/60 bg-slate-50 px-4 py-2.5 text-sm text-slate-900 outline-none transition focus:border-brand-400 focus:ring-2 focus:ring-brand-500/20 sm:w-64"
                     />
                     <button
                       type="button"
                       onClick={() => setGalleryOpenFor(field.name, !galleryVisible)}
-                      className="rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm font-semibold text-slate-900 transition hover:bg-slate-100"
+                      className="rounded-lg border border-slate-200/60 bg-white px-4 py-2.5 text-sm font-medium text-slate-900 shadow-sm transition hover:bg-slate-50"
                     >
                       {galleryVisible ? 'Hide gallery' : 'Open gallery'}
                     </button>
@@ -1088,11 +1088,11 @@ export default function AtlanticDunesForm({ collectionName, mode, itemId, siteNa
                 </div>
 
                 <div className="grid gap-4 lg:grid-cols-[1.4fr_0.6fr]">
-                  <div className="rounded-3xl border border-slate-200 bg-slate-50 p-4">
+                  <div className="rounded-xl border border-slate-200/60 bg-slate-50 p-4">
                     <p className="text-sm font-semibold text-slate-900">Upload new images</p>
-                    <p className="mt-1 text-sm text-slate-500">Selected images remain visible.</p>
-                    <label className="mt-4 inline-flex cursor-pointer items-center gap-2 rounded-2xl bg-brand-600 px-4 py-3 text-sm font-semibold text-white transition hover:bg-brand-700">
-                      {uploadingImages ? 'Uploading…' : 'Upload images'}
+                    <p className="mt-1 text-xs text-slate-500">Selected images remain visible.</p>
+                    <label className="mt-4 inline-flex cursor-pointer items-center gap-2 rounded-lg bg-gradient-to-r from-brand-500 to-brand-600 px-4 py-2.5 text-sm font-medium text-white shadow-sm transition-all duration-200 hover:shadow-md">
+                      {uploadingImages ? 'Uploading...' : 'Upload images'}
                       <input
                         type="file"
                         accept="image/*"
@@ -1108,20 +1108,20 @@ export default function AtlanticDunesForm({ collectionName, mode, itemId, siteNa
                       />
                     </label>
                     {queue.length > 0 ? (
-                      <div className="mt-4 space-y-4 rounded-3xl border border-slate-200 bg-white p-4">
+                      <div className="mt-4 space-y-4 rounded-xl border border-slate-200/60 bg-white p-4">
                         <p className="text-sm font-semibold text-slate-900">Pending upload</p>
-                        <p className="text-sm text-slate-500">Edit filename and related name before uploading.</p>
+                        <p className="text-xs text-slate-500">Edit filename and related name before uploading.</p>
                         <div className="space-y-4">
                           {queue.map((item) => (
                             <div key={item.id} className="grid gap-3 sm:grid-cols-[1fr_auto]">
-                              <div className="grid gap-3 rounded-2xl border border-slate-200 bg-slate-50 p-3">
+                              <div className="grid gap-3 rounded-lg border border-slate-200/60 bg-slate-50 p-3">
                                 <div>
                                   <label className="text-sm font-medium text-slate-900">Filename</label>
                                   <input
                                     type="text"
                                     value={item.filename}
                                     onChange={(event) => updateUploadQueueItem(field.name, item.id, { filename: event.target.value.replace(/[\\/]/g, '') })}
-                                    className="mt-2 w-full rounded-2xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 outline-none transition focus:border-brand-400 focus:ring-2 focus:ring-brand-500/20"
+                                    className="mt-2 w-full rounded-lg border border-slate-200/60 bg-white px-3 py-2 text-sm text-slate-900 outline-none transition focus:border-brand-400 focus:ring-2 focus:ring-brand-500/20"
                                   />
                                 </div>
                                 <div>
@@ -1130,14 +1130,14 @@ export default function AtlanticDunesForm({ collectionName, mode, itemId, siteNa
                                     type="text"
                                     value={item.label}
                                     onChange={(event) => updateUploadQueueItem(field.name, item.id, { label: event.target.value })}
-                                    className="mt-2 w-full rounded-2xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 outline-none transition focus:border-brand-400 focus:ring-2 focus:ring-brand-500/20"
+                                    className="mt-2 w-full rounded-lg border border-slate-200/60 bg-white px-3 py-2 text-sm text-slate-900 outline-none transition focus:border-brand-400 focus:ring-2 focus:ring-brand-500/20"
                                   />
                                 </div>
                               </div>
                               <button
                                 type="button"
                                 onClick={() => removeUploadQueueItem(field.name, item.id)}
-                                className="rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm font-semibold text-slate-900 transition hover:bg-slate-100"
+                                className="rounded-lg border border-slate-200/60 bg-white px-4 py-2.5 text-sm font-medium text-slate-900 shadow-sm transition hover:bg-slate-50"
                               >
                                 Remove
                               </button>
@@ -1146,7 +1146,7 @@ export default function AtlanticDunesForm({ collectionName, mode, itemId, siteNa
                           <button
                             type="button"
                             onClick={() => uploadPendingImages(field.name)}
-                            className="w-full rounded-2xl bg-brand-600 px-4 py-3 text-sm font-semibold text-white transition hover:bg-brand-700"
+                            className="w-full rounded-lg bg-gradient-to-r from-brand-500 to-brand-600 px-4 py-2.5 text-sm font-medium text-white shadow-sm transition-all duration-200 hover:shadow-md"
                           >
                             Upload queued images
                           </button>
@@ -1155,22 +1155,22 @@ export default function AtlanticDunesForm({ collectionName, mode, itemId, siteNa
                     ) : null}
                   </div>
 
-                  <div className="rounded-3xl border border-slate-200 bg-slate-50 p-4">
+                  <div className="rounded-xl border border-slate-200/60 bg-slate-50 p-4">
                     <p className="text-sm font-semibold text-slate-900">Selected images</p>
-                    <p className="mt-1 text-sm text-slate-500">These images are already selected for this record.</p>
+                    <p className="mt-1 text-xs text-slate-500">These images are already selected for this record.</p>
                     {selectedOptions.length === 0 ? (
                       <p className="mt-4 text-sm text-slate-500">No images selected yet.</p>
                     ) : (
                       <div className="mt-4 grid gap-4 sm:grid-cols-2">
                         {selectedOptions.map((option) => (
-                          <div key={option.value} className="rounded-3xl border border-slate-200 bg-white p-3">
-                            <div className="relative h-32 overflow-hidden rounded-3xl bg-slate-100">
+                          <div key={option.value} className="rounded-xl border border-slate-200/60 bg-white p-3">
+                            <div className="relative h-32 overflow-hidden rounded-lg bg-slate-100">
                               <img
                                 src={`${apiPrefix}/images/${encodeURIComponent(option.value)}`}
                                 alt={option.label}
                                 className="h-full w-full object-cover"
                               />
-                              <label className="absolute right-3 top-3 inline-flex items-center rounded-2xl bg-white/90 p-2 shadow-sm">
+                              <label className="absolute right-3 top-3 inline-flex items-center rounded-lg bg-white/90 p-2 shadow-sm">
                                 <input
                                   type="checkbox"
                                   checked
@@ -1188,7 +1188,7 @@ export default function AtlanticDunesForm({ collectionName, mode, itemId, siteNa
                               <button
                                 type="button"
                                 onClick={() => deleteImageFromLibrary(option.value, field.name)}
-                                className="rounded-2xl border border-rose-300 bg-rose-50 px-3 py-2 text-xs font-semibold text-rose-700 transition hover:bg-rose-100"
+                                className="rounded-lg border border-rose-200/60 bg-rose-50 px-4 py-2 text-xs font-medium text-rose-700 shadow-sm transition hover:bg-rose-100"
                               >
                                 Delete image
                               </button>
@@ -1202,14 +1202,16 @@ export default function AtlanticDunesForm({ collectionName, mode, itemId, siteNa
               </div>
 
               {galleryVisible ? (
-                <div className="space-y-4 rounded-3xl border border-slate-200 bg-white p-4">
+                <div className="space-y-4 rounded-xl border border-slate-200/60 bg-white p-4">
                   <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                     <p className="text-sm text-slate-500">Choose unselected gallery images.</p>
                     <p className="text-sm text-slate-500">{filteredOptions.length} available</p>
                   </div>
 
                   {filteredOptions.length === 0 ? (
-                    <div className="rounded-3xl border border-slate-200 bg-slate-50 p-5 text-sm text-slate-600">No matching gallery images found.</div>
+                    <div className="rounded-xl border border-slate-200/60 bg-slate-50 p-6 text-center">
+                      <p className="text-sm text-slate-500">No matching gallery images found</p>
+                    </div>
                   ) : (
                     <>
                       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
@@ -1218,7 +1220,7 @@ export default function AtlanticDunesForm({ collectionName, mode, itemId, siteNa
                             key={option.value}
                             type="button"
                             onClick={() => updateField(field.name, [...selectedValues, option.value])}
-                            className="group flex flex-col overflow-hidden rounded-[1.75rem] border border-slate-200 bg-slate-50 text-left transition hover:border-brand-300"
+                            className="group flex flex-col overflow-hidden rounded-xl border border-slate-200/60 bg-slate-50 text-left transition hover:border-brand-300"
                           >
                             <div className="relative h-40 w-full overflow-hidden bg-slate-100">
                               <img
@@ -1226,7 +1228,7 @@ export default function AtlanticDunesForm({ collectionName, mode, itemId, siteNa
                                 alt={option.label}
                                 className="h-full w-full object-cover transition duration-200 group-hover:scale-105"
                               />
-                              <div className="pointer-events-none absolute right-3 top-3 rounded-2xl bg-white/90 p-2 shadow-sm">
+                              <div className="pointer-events-none absolute right-3 top-3 rounded-lg bg-white/90 p-2 shadow-sm">
                                 <input
                                   type="checkbox"
                                   checked={false}
@@ -1247,12 +1249,12 @@ export default function AtlanticDunesForm({ collectionName, mode, itemId, siteNa
                         <p className="text-sm text-slate-500">
                           Showing {currentPage * imagePageSize + 1} – {Math.min((currentPage + 1) * imagePageSize, filteredOptions.length)} of {filteredOptions.length}
                         </p>
-                        <div className="inline-flex items-center gap-2 rounded-3xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700">
+                        <div className="inline-flex items-center gap-2 rounded-lg border border-slate-200/60 bg-slate-50 px-3 py-2 text-sm text-slate-700">
                           <button
                             type="button"
                             onClick={() => setImagePage((page) => Math.max(page - 1, 0))}
                             disabled={currentPage === 0}
-                            className="rounded-full px-3 py-1 transition hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-50"
+                            className="rounded-lg px-3 py-1 font-medium transition hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-50"
                           >
                             Previous
                           </button>
@@ -1261,7 +1263,7 @@ export default function AtlanticDunesForm({ collectionName, mode, itemId, siteNa
                             type="button"
                             onClick={() => setImagePage((page) => Math.min(page + 1, pageCount - 1))}
                             disabled={currentPage >= pageCount - 1}
-                            className="rounded-full px-3 py-1 transition hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-50"
+                            className="rounded-lg px-3 py-1 font-medium transition hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-50"
                           >
                             Next
                           </button>
@@ -1309,20 +1311,20 @@ export default function AtlanticDunesForm({ collectionName, mode, itemId, siteNa
       }
       case 'stringArray':
         return (
-          <div className="space-y-3 mt-2">
+          <div className="space-y-3 mt-3">
             {Array.isArray(value) ? value.map((item: string, index: number) => (
               <div key={`${field.name}-${index}`} className="flex gap-2">
                 <input
                   type="text"
                   value={item ?? ''}
                   onChange={(event) => updateArrayItem(field.name, index, event.target.value)}
-                  className="flex-1 rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-brand-400 focus:ring-2 focus:ring-brand-500/20"
+                  className="flex-1 rounded-lg border border-slate-200/60 bg-white px-4 py-2.5 text-sm text-slate-900 outline-none transition focus:border-brand-400 focus:ring-2 focus:ring-brand-500/20"
                   placeholder={field.itemLabel ?? 'Item text'}
                 />
                 <button
                   type="button"
                   onClick={() => removeArrayItem(field.name, index)}
-                  className="rounded-2xl border border-slate-200 bg-rose-50 px-3 text-sm text-rose-700 transition hover:bg-rose-100"
+                  className="rounded-lg border border-rose-200/60 bg-rose-50 px-4 py-2.5 text-sm font-medium text-rose-700 shadow-sm transition hover:bg-rose-100"
                 >
                   Remove
                 </button>
@@ -1331,7 +1333,7 @@ export default function AtlanticDunesForm({ collectionName, mode, itemId, siteNa
             <button
               type="button"
               onClick={() => addArrayItem(field.name, '')}
-              className="rounded-2xl border border-brand-200 bg-brand-50 px-4 py-2 text-sm font-semibold text-brand-700 transition hover:bg-brand-100"
+              className="rounded-lg border border-brand-200/60 bg-brand-50 px-4 py-2.5 text-sm font-medium text-brand-700 shadow-sm transition hover:bg-brand-100"
             >
               Add {field.itemLabel ?? 'item'}
             </button>
@@ -1339,16 +1341,16 @@ export default function AtlanticDunesForm({ collectionName, mode, itemId, siteNa
         );
       case 'objectArray':
         return (
-          <div className="space-y-4 mt-2">
+          <div className="space-y-4 mt-3">
             {Array.isArray(value)
               ? value.map((item: any, index: number) => (
-                  <div key={`${field.name}-${index}`} className="rounded-3xl border border-slate-200 bg-slate-50 p-4">
+                  <div key={`${field.name}-${index}`} className="rounded-xl border border-slate-200/60 bg-slate-50 p-4">
                     <div className="flex items-center justify-between gap-4">
                       <p className="font-semibold text-slate-900">{field.itemLabel ?? 'Item'} {index + 1}</p>
                       <button
                         type="button"
                         onClick={() => removeArrayItem(field.name, index)}
-                        className="rounded-2xl border border-rose-200 bg-rose-50 px-3 py-1 text-sm text-rose-700 transition hover:bg-rose-100"
+                        className="rounded-lg border border-rose-200/60 bg-rose-50 px-4 py-2 text-sm font-medium text-rose-700 shadow-sm transition hover:bg-rose-100"
                       >
                         Remove
                       </button>
@@ -1361,7 +1363,7 @@ export default function AtlanticDunesForm({ collectionName, mode, itemId, siteNa
                             type="text"
                             value={item[childField.name] ?? ''}
                             onChange={(event) => updateObjectArrayItem(field.name, index, childField.name, event.target.value)}
-                            className="mt-2 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-brand-400 focus:ring-2 focus:ring-brand-500/20"
+                            className="mt-2 w-full rounded-lg border border-slate-200/60 bg-white px-4 py-2.5 text-sm text-slate-900 outline-none transition focus:border-brand-400 focus:ring-2 focus:ring-brand-500/20"
                           />
                         </div>
                       ))}
@@ -1372,7 +1374,7 @@ export default function AtlanticDunesForm({ collectionName, mode, itemId, siteNa
             <button
               type="button"
               onClick={() => addArrayItem(field.name, field.itemFields?.reduce((acc, child) => ({ ...acc, [child.name]: '' }), {}) ?? {})}
-              className="rounded-2xl border border-brand-200 bg-brand-50 px-4 py-2 text-sm font-semibold text-brand-700 transition hover:bg-brand-100"
+              className="rounded-lg border border-brand-200/60 bg-brand-50 px-4 py-2.5 text-sm font-medium text-brand-700 shadow-sm transition hover:bg-brand-100"
             >
               Add {field.itemLabel ?? 'row'}
             </button>
@@ -1384,29 +1386,42 @@ export default function AtlanticDunesForm({ collectionName, mode, itemId, siteNa
   }
 
   return (
-    <div className="space-y-8 p-6">
-      <div className="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-sm shadow-slate-900/5">
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+    <div className="space-y-6">
+      <div className="rounded-xl border border-slate-200/60 bg-gradient-to-br from-white to-slate-50/30 p-8 shadow-sm">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
           <div>
-            <h2 className="text-2xl font-semibold text-slate-900">{mode === 'create' ? 'Create' : 'Edit'} {schema.label}</h2>
-            <p className="mt-2 text-sm text-slate-600">{schema.description}</p>
+            <div className="mb-2 inline-flex items-center gap-2 rounded-lg bg-gradient-to-r from-brand-500 to-brand-600 px-3 py-1 text-xs font-semibold tracking-wide text-white shadow-sm">
+              {mode === 'create' ? 'Create New' : 'Edit'}
+            </div>
+            <h2 className="text-3xl font-semibold text-slate-900">{schema.label}</h2>
+            <p className="mt-2 text-sm text-slate-500">{schema.description}</p>
           </div>
           <button
             type="button"
             onClick={() => router.push(siteName ? `/dashboard/websites/${siteName}` : '/dashboard/atlanticdunes')}
-            className="rounded-3xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-100"
+            className="inline-flex items-center gap-2 rounded-lg border border-slate-200/60 bg-white px-4 py-2.5 text-sm font-medium text-slate-700 shadow-sm transition-all duration-200 hover:bg-slate-50 hover:shadow"
           >
-            Back to site overview
+            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+            </svg>
+            Back to Overview
           </button>
         </div>
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-6">
         {loading ? (
-          <div className="rounded-3xl border border-slate-200 bg-slate-50 p-6 text-slate-700">Loading record…</div>
+          <div className="rounded-xl border border-slate-200/60 bg-white p-12 text-center shadow-sm">
+            <div className="mx-auto h-12 w-12 rounded-full bg-slate-100 flex items-center justify-center animate-pulse">
+              <svg className="h-6 w-6 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+              </svg>
+            </div>
+            <p className="mt-4 text-sm font-medium text-slate-600">Loading record...</p>
+          </div>
         ) : (
           schema.fields.map((field) => (
-            <div key={field.name} className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm shadow-slate-900/5">
+            <div key={field.name} className="rounded-xl border border-slate-200/60 bg-white p-6 shadow-sm">
               <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                 <div>
                   <label htmlFor={field.name} className="text-sm font-semibold text-slate-900">
@@ -1425,15 +1440,33 @@ export default function AtlanticDunesForm({ collectionName, mode, itemId, siteNa
           <button
             type="submit"
             disabled={saving || loading}
-            className="rounded-3xl bg-brand-500 px-5 py-3 text-sm font-semibold text-white transition hover:bg-brand-600 disabled:cursor-not-allowed disabled:opacity-60"
+            className="inline-flex items-center gap-2 rounded-lg bg-gradient-to-r from-brand-500 to-brand-600 px-6 py-3 text-sm font-medium text-white shadow-sm transition-all duration-200 hover:shadow-md disabled:cursor-not-allowed disabled:opacity-60"
           >
-            {saving ? 'Saving…' : 'Save changes'}
+            {saving ? (
+              <>
+                <svg className="h-4 w-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                Saving...
+              </>
+            ) : (
+              <>
+                <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                </svg>
+                Save Changes
+              </>
+            )}
           </button>
           <button
             type="button"
             onClick={() => router.back()}
-            className="rounded-3xl border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-slate-700 transition hover:border-slate-300"
+            className="inline-flex items-center gap-2 rounded-lg border border-slate-200/60 bg-white px-6 py-3 text-sm font-medium text-slate-700 shadow-sm transition-all duration-200 hover:bg-slate-50 hover:shadow"
           >
+            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+            </svg>
             Cancel
           </button>
         </div>

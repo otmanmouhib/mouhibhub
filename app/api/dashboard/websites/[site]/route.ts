@@ -15,12 +15,6 @@ const websites = [
     url: 'adrobiofarm.com',
     status: 'Live',
   },
-  {
-    db: 'mouhibhub',
-    label: 'MBHUB CMS',
-    url: 'mnhub.com',
-    status: 'Live',
-  },
 ];
 
 export async function GET(request: NextRequest, { params }: { params: Promise<{ site: string }> }) {

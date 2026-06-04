@@ -113,7 +113,7 @@ export default function SiteManagementPage() {
   const rawPage = params?.page;
   const pageKey = Array.isArray(rawPage) ? rawPage.join('/') : rawPage ?? '';
   const siteName = Array.isArray(params?.site) ? params.site[0] : params?.site ?? '';
-  const supportedSites = useMemo(() => ['atlanticdunes', 'adrobiofarm', 'mouhibhub'] as const, []);
+  const supportedSites = useMemo(() => ['atlanticdunes', 'adrobiofarm'] as const, []);
   const supportedSite = useMemo(() => supportedSites.includes(siteName as typeof supportedSites[number]), [siteName, supportedSites]);
   const apiPrefix = useMemo(() => (siteName ? `/api/${siteName}` : '/api/atlanticdunes'), [siteName]);
   const metadata = useMemo(() => pageMetadata[pageKey], [pageKey]);
@@ -603,48 +603,77 @@ export default function SiteManagementPage() {
 
   if (isGallery) {
     return (
-      <div className="space-y-8 p-6">
-        <section className="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-sm shadow-slate-900/5">
+      <div className="space-y-6">
+        <section className="rounded-xl border border-slate-200/60 bg-gradient-to-br from-white to-slate-50/30 p-8 shadow-sm">
           <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div>
-              <p className="text-sm uppercase tracking-[0.24em] text-brand-500">Manage gallery</p>
-              <h1 className="mt-3 text-3xl font-semibold text-slate-900">Gallery images</h1>
-              <p className="mt-2 text-sm text-slate-600">Upload, preview, and remove gallery images stored for {siteName}.</p>
+              <div className="mb-2 inline-flex items-center gap-2 rounded-lg bg-gradient-to-r from-brand-500 to-brand-600 px-3 py-1 text-xs font-semibold tracking-wide text-white shadow-sm">
+                Gallery Management
+              </div>
+              <h1 className="text-3xl font-semibold text-slate-900">Gallery Images</h1>
+              <p className="mt-2 text-sm text-slate-500">Upload and organize gallery images for {siteName}</p>
             </div>
+            {!loading && !error && (
+              <div className="flex items-center gap-2 rounded-lg border border-slate-200/60 bg-white px-4 py-2 shadow-sm">
+                <span className="text-sm font-medium text-slate-700">{galleryImages.length} {galleryImages.length === 1 ? 'Image' : 'Images'}</span>
+              </div>
+            )}
           </div>
         </section>
 
-        <section className="rounded-[1.75rem] border border-slate-200 bg-white p-6 shadow-sm shadow-slate-900/5">
+        <section className="rounded-xl border border-slate-200/60 bg-white p-6 shadow-sm">
           <div className="grid gap-4 sm:grid-cols-[1fr_auto] sm:items-end">
             <div>
-              <label className="block text-sm font-semibold text-slate-900">Upload gallery images</label>
+              <label className="block text-sm font-medium text-slate-900">Upload gallery images</label>
               <input
                 type="file"
                 multiple
                 accept="image/*"
                 onChange={(event) => setGalleryFiles(event.target.files)}
-                className="mt-3 w-full rounded-3xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700 shadow-sm focus:border-brand-300 focus:outline-none"
+                className="mt-3 block w-full rounded-lg border border-slate-200/60 bg-slate-50/50 px-4 py-2.5 text-sm text-slate-700 shadow-sm transition-colors file:mr-4 file:rounded-lg file:border-0 file:bg-brand-500 file:px-4 file:py-2 file:text-xs file:font-medium file:text-white hover:file:bg-brand-600 focus:border-brand-300 focus:outline-none focus:ring-2 focus:ring-brand-500/20"
               />
             </div>
             <button
               type="button"
               disabled={!galleryFiles || galleryFiles.length === 0 || uploadingGallery}
               onClick={uploadGalleryImages}
-              className="rounded-3xl bg-brand-500 px-5 py-3 text-sm font-semibold text-white transition hover:bg-brand-600 disabled:cursor-not-allowed disabled:opacity-60"
+              className="rounded-lg bg-gradient-to-r from-brand-500 to-brand-600 px-5 py-2.5 text-sm font-medium text-white shadow-sm transition-all duration-200 hover:shadow-md disabled:cursor-not-allowed disabled:opacity-60"
             >
-              {uploadingGallery ? 'Uploading…' : 'Upload images'}
+              {uploadingGallery ? 'Uploading…' : 'Upload Images'}
             </button>
           </div>
         </section>
 
         {error ? (
-          <div className="rounded-[1.75rem] border border-rose-200 bg-rose-50 p-6 text-rose-700 shadow-sm shadow-rose-900/5">Error: {error}</div>
+          <div className="rounded-xl border border-rose-200/60 bg-rose-50 p-6 text-rose-700 shadow-sm">
+            <div className="flex items-center gap-3">
+              <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              <span className="font-medium">Error: {error}</span>
+            </div>
+          </div>
         ) : loading ? (
-          <div className="rounded-[1.75rem] border border-slate-200 bg-white p-6 text-slate-600 shadow-sm shadow-slate-900/5">Loading gallery images…</div>
+          <div className="rounded-xl border border-slate-200/60 bg-white p-12 text-center shadow-sm">
+            <div className="mx-auto h-12 w-12 rounded-full bg-slate-100 flex items-center justify-center animate-pulse">
+              <svg className="h-6 w-6 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+              </svg>
+            </div>
+            <p className="mt-4 text-sm font-medium text-slate-600">Loading gallery images...</p>
+          </div>
         ) : galleryImages.length === 0 ? (
-          <div className="rounded-[1.75rem] border border-slate-200 bg-white p-6 text-slate-600 shadow-sm shadow-slate-900/5">No gallery images found.</div>
+          <div className="rounded-xl border border-slate-200/60 bg-white p-12 text-center shadow-sm">
+            <div className="mx-auto h-12 w-12 rounded-full bg-slate-100 flex items-center justify-center">
+              <svg className="h-6 w-6 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+              </svg>
+            </div>
+            <p className="mt-4 text-sm font-medium text-slate-600">No gallery images found</p>
+            <p className="mt-1 text-xs text-slate-400">Upload images using the form above</p>
+          </div>
         ) : (
-          <div className="grid gap-6 xl:grid-cols-3">
+          <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
             {galleryImages.map(renderGalleryCard)}
           </div>
         )}
@@ -654,43 +683,76 @@ export default function SiteManagementPage() {
 
   if (isContacts) {
     return (
-      <div className="space-y-8 p-6">
-        <section className="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-sm shadow-slate-900/5">
+      <div className="space-y-6">
+        <section className="rounded-xl border border-slate-200/60 bg-gradient-to-br from-white to-slate-50/30 p-8 shadow-sm">
           <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div>
-              <p className="text-sm uppercase tracking-[0.24em] text-brand-500">Manage contact submissions</p>
-              <h1 className="mt-3 text-3xl font-semibold text-slate-900">Contact submissions</h1>
-              <p className="mt-2 text-sm text-slate-600">Review inbound contact form submissions from {siteName}.</p>
+              <div className="mb-2 inline-flex items-center gap-2 rounded-lg bg-gradient-to-r from-brand-500 to-brand-600 px-3 py-1 text-xs font-semibold tracking-wide text-white shadow-sm">
+                Contact Submissions
+              </div>
+              <h1 className="text-3xl font-semibold text-slate-900">Contact Management</h1>
+              <p className="mt-2 text-sm text-slate-500">Review and manage contact form submissions from {siteName}</p>
             </div>
+            {!loading && !error && (
+              <div className="flex items-center gap-2 rounded-lg border border-slate-200/60 bg-white px-4 py-2 shadow-sm">
+                <span className="text-sm font-medium text-slate-700">{contacts.length} {contacts.length === 1 ? 'Submission' : 'Submissions'}</span>
+              </div>
+            )}
           </div>
         </section>
 
         {error ? (
-          <div className="rounded-[1.75rem] border border-rose-200 bg-rose-50 p-6 text-rose-700 shadow-sm shadow-rose-900/5">Error: {error}</div>
+          <div className="rounded-xl border border-rose-200/60 bg-rose-50 p-6 text-rose-700 shadow-sm">
+            <div className="flex items-center gap-3">
+              <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              <span className="font-medium">Error: {error}</span>
+            </div>
+          </div>
         ) : loading ? (
-          <div className="rounded-[1.75rem] border border-slate-200 bg-white p-6 text-slate-600 shadow-sm shadow-slate-900/5">Loading contact submissions…</div>
+          <div className="rounded-xl border border-slate-200/60 bg-white p-12 text-center shadow-sm">
+            <div className="mx-auto h-12 w-12 rounded-full bg-slate-100 flex items-center justify-center animate-pulse">
+              <svg className="h-6 w-6 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+              </svg>
+            </div>
+            <p className="mt-4 text-sm font-medium text-slate-600">Loading contact submissions...</p>
+          </div>
         ) : contacts.length === 0 ? (
-          <div className="rounded-[1.75rem] border border-slate-200 bg-white p-6 text-slate-600 shadow-sm shadow-slate-900/5">No contact submissions found for {siteName}.</div>
+          <div className="rounded-xl border border-slate-200/60 bg-white p-12 text-center shadow-sm">
+            <div className="mx-auto h-12 w-12 rounded-full bg-slate-100 flex items-center justify-center">
+              <svg className="h-6 w-6 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" />
+              </svg>
+            </div>
+            <p className="mt-4 text-sm font-medium text-slate-600">No contact submissions found</p>
+            <p className="mt-1 text-xs text-slate-400">New submissions will appear here</p>
+          </div>
         ) : (
-          <div className="overflow-hidden rounded-[1.75rem] border border-slate-200 bg-white shadow-sm shadow-slate-900/5">
-            <table className="min-w-full divide-y divide-slate-200">
-              <thead className="bg-slate-50">
+          <div className="overflow-hidden rounded-xl border border-slate-200/60 bg-white shadow-sm">
+            <table className="min-w-full divide-y divide-slate-200/60">
+              <thead className="bg-slate-50/50">
                 <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-slate-500">Name</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-slate-500">Email</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-slate-500">Message</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-slate-500">Phone</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-slate-500">Status</th>
+                  <th className="px-6 py-3.5 text-left text-xs font-medium uppercase tracking-wider text-slate-500">Name</th>
+                  <th className="px-6 py-3.5 text-left text-xs font-medium uppercase tracking-wider text-slate-500">Email</th>
+                  <th className="px-6 py-3.5 text-left text-xs font-medium uppercase tracking-wider text-slate-500">Message</th>
+                  <th className="px-6 py-3.5 text-left text-xs font-medium uppercase tracking-wider text-slate-500">Phone</th>
+                  <th className="px-6 py-3.5 text-left text-xs font-medium uppercase tracking-wider text-slate-500">Status</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-200">
+              <tbody className="divide-y divide-slate-200/60">
                 {contacts.map((contact) => (
-                  <tr key={contact._id}>
-                    <td className="px-6 py-4 text-sm text-slate-800">{contact.name}</td>
-                    <td className="px-6 py-4 text-sm text-slate-800">{contact.email}</td>
-                    <td className="px-6 py-4 text-sm text-slate-800">{contact.message}</td>
-                    <td className="px-6 py-4 text-sm text-slate-800">{contact.phone ?? '-'}</td>
-                    <td className="px-6 py-4 text-sm text-slate-800">{contact.status ?? 'New'}</td>
+                  <tr key={contact._id} className="transition-colors hover:bg-slate-50/50">
+                    <td className="px-6 py-4 text-sm font-medium text-slate-900">{contact.name}</td>
+                    <td className="px-6 py-4 text-sm text-slate-600">{contact.email}</td>
+                    <td className="px-6 py-4 text-sm text-slate-600">{contact.message}</td>
+                    <td className="px-6 py-4 text-sm text-slate-600">{contact.phone ?? '-'}</td>
+                    <td className="px-6 py-4">
+                      <span className={`inline-flex items-center rounded-lg px-2.5 py-1 text-xs font-medium ${contact.status === 'New' ? 'bg-emerald-50 text-emerald-700 border border-emerald-200/60' : 'bg-slate-100 text-slate-700 border border-slate-200/60'}`}>
+                        {contact.status ?? 'New'}
+                      </span>
+                    </td>
                   </tr>
                 ))}
               </tbody>
@@ -703,13 +765,15 @@ export default function SiteManagementPage() {
 
   if (isEnterprise) {
     return (
-      <div className="space-y-8 p-6">
-        <section className="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-sm shadow-slate-900/5">
+      <div className="space-y-6">
+        <section className="rounded-xl border border-slate-200/60 bg-gradient-to-br from-white to-slate-50/30 p-8 shadow-sm">
           <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div>
-              <p className="text-sm uppercase tracking-[0.24em] text-brand-500">Manage entreprise informations</p>
-              <h1 className="mt-3 text-3xl font-semibold text-slate-900">Entreprise information</h1>
-              <p className="mt-2 text-sm text-slate-600">Edit the company contact and profile details for {siteName}.</p>
+              <div className="mb-2 inline-flex items-center gap-2 rounded-lg bg-gradient-to-r from-brand-500 to-brand-600 px-3 py-1 text-xs font-semibold tracking-wide text-white shadow-sm">
+                Company Information
+              </div>
+              <h1 className="text-3xl font-semibold text-slate-900">Enterprise Details</h1>
+              <p className="mt-2 text-sm text-slate-500">Edit company profile and contact information for {siteName}</p>
             </div>
           </div>
         </section>
@@ -721,30 +785,55 @@ export default function SiteManagementPage() {
 
   if (collection && supportedSite) {
     return (
-      <div className="space-y-8 p-6">
-        <section className="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-sm shadow-slate-900/5">
+      <div className="space-y-6">
+        <section className="rounded-xl border border-slate-200/60 bg-gradient-to-br from-white to-slate-50/30 p-8 shadow-sm">
           <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div>
-              <p className="text-sm uppercase tracking-[0.24em] text-brand-500">{metadata?.title ?? 'Manage items'}</p>
-              <h1 className="mt-3 text-3xl font-semibold text-slate-900">{metadata?.title}</h1>
-              <p className="mt-2 text-sm text-slate-600">{metadata?.description ?? collectionDescription(collection)}</p>
+              <div className="mb-2 inline-flex items-center gap-2 rounded-lg bg-gradient-to-r from-brand-500 to-brand-600 px-3 py-1 text-xs font-semibold tracking-wide text-white shadow-sm">
+                {segmentLabel(collection)} Management
+              </div>
+              <h1 className="text-3xl font-semibold text-slate-900">{metadata?.title}</h1>
+              <p className="mt-2 text-sm text-slate-500">{metadata?.description ?? collectionDescription(collection)}</p>
             </div>
             <Link
               href={`/dashboard/websites/${siteName}/${pageKey}/new`}
-              className="rounded-3xl bg-brand-500 px-5 py-3 text-sm font-semibold text-white transition hover:bg-brand-600"
+              className="inline-flex items-center gap-2 rounded-lg bg-gradient-to-r from-brand-500 to-brand-600 px-5 py-2.5 text-sm font-medium text-white shadow-sm transition-all duration-200 hover:shadow-md"
             >
+              <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
+              </svg>
               Create {segmentLabel(collection)}
             </Link>
           </div>
         </section>
 
         {error ? (
-          <div className="rounded-[1.75rem] border border-rose-200 bg-rose-50 p-6 text-rose-700 shadow-sm shadow-rose-900/5">Error: {error}</div>
+          <div className="rounded-xl border border-rose-200/60 bg-rose-50 p-6 text-rose-700 shadow-sm">
+            <div className="flex items-center gap-3">
+              <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              <span className="font-medium">Error: {error}</span>
+            </div>
+          </div>
         ) : loading ? (
-          <div className="rounded-[1.75rem] border border-slate-200 bg-white p-6 text-slate-600 shadow-sm shadow-slate-900/5">Loading {collection}…</div>
+          <div className="rounded-xl border border-slate-200/60 bg-white p-12 text-center shadow-sm">
+            <div className="mx-auto h-12 w-12 rounded-full bg-slate-100 flex items-center justify-center animate-pulse">
+              <svg className="h-6 w-6 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+              </svg>
+            </div>
+            <p className="mt-4 text-sm font-medium text-slate-600">Loading {collection}...</p>
+          </div>
         ) : items.length === 0 ? (
-          <div className="rounded-[1.75rem] border border-slate-200 bg-white p-6 text-slate-600 shadow-sm shadow-slate-900/5">
-            No {collection} found. Use the button above to add a new {segmentLabel(collection).toLowerCase()}.
+          <div className="rounded-xl border border-slate-200/60 bg-white p-12 text-center shadow-sm">
+            <div className="mx-auto h-12 w-12 rounded-full bg-slate-100 flex items-center justify-center">
+              <svg className="h-6 w-6 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" />
+              </svg>
+            </div>
+            <p className="mt-4 text-sm font-medium text-slate-600">No {collection} found</p>
+            <p className="mt-1 text-xs text-slate-400">Use the button above to add a new {segmentLabel(collection).toLowerCase()}</p>
           </div>
         ) : (
           <div className="grid gap-6 xl:grid-cols-2">
@@ -757,39 +846,62 @@ export default function SiteManagementPage() {
 
   if (!siteName || !supportedSite) {
     return (
-      <div className="rounded-[2rem] border border-rose-200 bg-rose-50 p-6 text-rose-700 shadow-sm">
-        <h1 className="text-2xl font-semibold">Website not found</h1>
-        <p className="mt-2 text-sm">The requested website is not supported or could not be found.</p>
+      <div className="rounded-xl border border-rose-200/60 bg-rose-50 p-8 shadow-sm">
+        <div className="flex items-start gap-4">
+          <div className="flex-shrink-0">
+            <svg className="h-6 w-6 text-rose-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+            </svg>
+          </div>
+          <div>
+            <h1 className="text-xl font-semibold text-rose-900">Website not found</h1>
+            <p className="mt-2 text-sm text-rose-700">The requested website is not supported or could not be found.</p>
+          </div>
+        </div>
       </div>
     );
   }
 
   if (!metadata) {
     return (
-      <div className="rounded-[2rem] border border-rose-200 bg-rose-50 p-6 text-rose-700 shadow-sm">
-        <h1 className="text-2xl font-semibold">Page not found</h1>
-        <p className="mt-2 text-sm">The requested management page does not exist.</p>
+      <div className="rounded-xl border border-rose-200/60 bg-rose-50 p-8 shadow-sm">
+        <div className="flex items-start gap-4">
+          <div className="flex-shrink-0">
+            <svg className="h-6 w-6 text-rose-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+            </svg>
+          </div>
+          <div>
+            <h1 className="text-xl font-semibold text-rose-900">Page not found</h1>
+            <p className="mt-2 text-sm text-rose-700">The requested management page does not exist.</p>
+          </div>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="space-y-8 p-6">
-      <section className="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-sm shadow-slate-900/5">
+    <div className="space-y-6">
+      <section className="rounded-xl border border-slate-200/60 bg-gradient-to-br from-white to-slate-50/30 p-8 shadow-sm">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <p className="text-sm uppercase tracking-[0.24em] text-brand-500">Website management</p>
-            <h1 className="mt-3 text-3xl font-semibold text-slate-900">{metadata.title}</h1>
-            <p className="mt-2 text-sm text-slate-600">{metadata.description}</p>
+            <div className="mb-2 inline-flex items-center gap-2 rounded-lg bg-gradient-to-r from-brand-500 to-brand-600 px-3 py-1 text-xs font-semibold tracking-wide text-white shadow-sm">
+              Website Management
+            </div>
+            <h1 className="text-3xl font-semibold text-slate-900">{metadata.title}</h1>
+            <p className="mt-2 text-sm text-slate-500">{metadata.description}</p>
           </div>
         </div>
       </section>
 
-      <section className="rounded-[1.75rem] border border-slate-200 bg-white p-6 shadow-sm shadow-slate-900/5">
-        <h2 className="text-xl font-semibold text-slate-900">This page is ready for content</h2>
-        <p className="mt-3 text-sm text-slate-600">
-          Add your management UI, forms, tables, or reports here for the selected website section.
-        </p>
+      <section className="rounded-xl border border-slate-200/60 bg-white p-12 text-center shadow-sm">
+        <div className="mx-auto h-12 w-12 rounded-full bg-slate-100 flex items-center justify-center">
+          <svg className="h-6 w-6 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" />
+          </svg>
+        </div>
+        <h2 className="mt-4 text-lg font-medium text-slate-900">Ready for content</h2>
+        <p className="mt-2 text-sm text-slate-500">Add your management UI, forms, tables, or reports for this section</p>
       </section>
     </div>
   );

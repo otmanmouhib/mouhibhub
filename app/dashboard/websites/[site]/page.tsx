@@ -43,85 +43,62 @@ export default function SiteOverviewPage() {
     loadSiteInfo();
   }, [siteName, router]);
 
-  const pageActions = useMemo(
-    () => [
-      ...(siteName === 'atlanticdunes'
-        ? [{ key: 'collections', label: 'Collections', href: '/dashboard/atlanticdunes' }]
-        : []),
-      { key: 'manage-services', label: 'Manage services', href: `/dashboard/websites/${siteName}/manage-services` },
-      { key: 'manage-products', label: 'Manage products', href: `/dashboard/websites/${siteName}/manage-products` },
-      { key: 'manage-boutique', label: 'Manage boutique', href: `/dashboard/websites/${siteName}/manage-boutique` },
-      { key: 'manage-news', label: 'Manage news', href: `/dashboard/websites/${siteName}/manage-news` },
-      { key: 'manage-news-categories', label: 'Manage news categories', href: `/dashboard/websites/${siteName}/manage-news-categories` },
-      { key: 'manage-gallery', label: 'Manage gallery', href: `/dashboard/websites/${siteName}/manage-gallery` },
-      { key: 'manage-entreprise-informations', label: 'Manage entreprise informations', href: `/dashboard/websites/${siteName}/manage-entreprise-informations` },
-      { key: 'manage-contact-submissions', label: 'Manage contact submissions', href: `/dashboard/websites/${siteName}/manage-contact-submissions` },
-      { key: 'manage-report-tickets', label: 'Manage report tickets', href: `/dashboard/websites/${siteName}/manage-report-tickets` },
-      ...(site?.availableCollections.includes('contacts')
-        ? [{ key: 'contacts', label: 'Contacts', href: `/dashboard/websites/${siteName}/contacts` }]
-        : []),
-      ...(site?.availableCollections.includes('reports')
-        ? [{ key: 'reports', label: 'Reports', href: `/dashboard/websites/${siteName}/reports` }]
-        : []),
-      ...(site?.availableCollections.includes('users')
-        ? [{ key: 'users', label: 'Users', href: `/dashboard/websites/${siteName}/users` }]
-        : []),
-    ],
-    [site, siteName],
-  );
-
   return (
-    <div className="space-y-8 p-6">
+    <div className="space-y-6">
       {error ? (
-        <div className="rounded-3xl border border-rose-200 bg-rose-50 p-6 text-rose-700 shadow-sm">Error: {error}</div>
+        <div className="rounded-xl border border-rose-200/60 bg-rose-50 p-6 text-rose-700 shadow-sm">
+          <div className="flex items-center gap-3">
+            <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <span className="font-medium">Error: {error}</span>
+          </div>
+        </div>
       ) : (
-        <>
-          <div className="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-sm shadow-slate-900/5">
+        <div className="space-y-6">
+          <div className="rounded-xl border border-slate-200/60 bg-gradient-to-br from-white to-slate-50/30 p-8 shadow-sm">
             <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
               <div>
-                <p className="text-sm uppercase tracking-[0.24em] text-brand-500">Website overview</p>
-                <h1 className="mt-3 text-3xl font-semibold text-slate-900">{site?.label ?? params.site}</h1>
-                <p className="mt-2 text-sm text-slate-600">Manage pages, collections, and other website-specific administration tools.</p>
+                <div className="mb-2 inline-flex items-center gap-2 rounded-lg bg-gradient-to-r from-brand-500 to-brand-600 px-3 py-1 text-xs font-semibold tracking-wide text-white shadow-sm">
+                  Website Overview
+                </div>
+                <h1 className="text-3xl font-semibold text-slate-900">{site?.label ?? params.site}</h1>
+                <p className="mt-2 text-sm text-slate-500">Manage collections and administration tools</p>
               </div>
-              <div className="rounded-full bg-slate-100 px-4 py-2 text-sm font-semibold text-slate-700">{site?.status ?? 'Loading...'}</div>
+              <div className="flex items-center gap-2 rounded-lg border border-emerald-200/60 bg-emerald-50 px-4 py-2 shadow-sm">
+                <div className="h-2 w-2 rounded-full bg-emerald-500"></div>
+                <span className="text-sm font-medium text-emerald-700">{site?.status ?? 'Loading...'}</span>
+              </div>
             </div>
           </div>
 
-          <div className="grid gap-6 lg:grid-cols-3">
-            <div className="rounded-[1.75rem] border border-slate-200 bg-white p-6 shadow-sm shadow-slate-900/5">
-              <h2 className="text-lg font-semibold text-slate-900">Database</h2>
-              <p className="mt-2 text-sm text-slate-600">{site?.db ?? siteName}</p>
+          <div className="grid gap-4 lg:grid-cols-3">
+            <div className="group relative overflow-hidden rounded-xl border border-slate-200/60 bg-white p-6 shadow-sm transition-all duration-200 hover:shadow-md">
+              <div className="absolute right-0 top-0 h-24 w-24 translate-x-8 -translate-y-8 rounded-full bg-blue-500/5"></div>
+              <div className="relative">
+                <p className="text-xs font-medium uppercase tracking-wider text-slate-500">Database</p>
+                <p className="mt-3 text-2xl font-semibold text-slate-900">{site?.db ?? siteName}</p>
+                <p className="mt-2 text-xs text-slate-400">Connected instance</p>
+              </div>
             </div>
-            <div className="rounded-[1.75rem] border border-slate-200 bg-white p-6 shadow-sm shadow-slate-900/5">
-              <h2 className="text-lg font-semibold text-slate-900">Contacts</h2>
-              <p className="mt-2 text-sm text-slate-600">{site?.contacts ?? 0}</p>
+            <div className="group relative overflow-hidden rounded-xl border border-slate-200/60 bg-white p-6 shadow-sm transition-all duration-200 hover:shadow-md">
+              <div className="absolute right-0 top-0 h-24 w-24 translate-x-8 -translate-y-8 rounded-full bg-emerald-500/5"></div>
+              <div className="relative">
+                <p className="text-xs font-medium uppercase tracking-wider text-slate-500">Contacts</p>
+                <p className="mt-3 text-4xl font-semibold text-slate-900">{site?.contacts ?? 0}</p>
+                <p className="mt-2 text-xs text-slate-400">Total records</p>
+              </div>
             </div>
-            <div className="rounded-[1.75rem] border border-slate-200 bg-white p-6 shadow-sm shadow-slate-900/5">
-              <h2 className="text-lg font-semibold text-slate-900">Reports</h2>
-              <p className="mt-2 text-sm text-slate-600">{site?.reports ?? 0}</p>
-            </div>
-          </div>
-
-          <div className="space-y-4">
-            <h2 className="text-xl font-semibold text-slate-900">Available site pages</h2>
-            <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-              {pageActions.map((action) => (
-                <Link
-                  key={action.key}
-                  href={action.href}
-                  className="rounded-[1.5rem] border border-slate-200 bg-white p-6 text-left text-sm font-semibold transition hover:-translate-y-0.5 hover:border-brand-300 hover:bg-brand-50"
-                >
-                  <div className="text-slate-900">{action.label}</div>
-                  <div className="mt-2 text-xs font-normal text-slate-500">
-                    {action.label === 'Collections'
-                      ? 'Browse database collections and manage records.'
-                      : `Open the ${action.label.toLowerCase()} page for this website.`}
-                  </div>
-                </Link>
-              ))}
+            <div className="group relative overflow-hidden rounded-xl border border-slate-200/60 bg-white p-6 shadow-sm transition-all duration-200 hover:shadow-md">
+              <div className="absolute right-0 top-0 h-24 w-24 translate-x-8 -translate-y-8 rounded-full bg-brand-500/5"></div>
+              <div className="relative">
+                <p className="text-xs font-medium uppercase tracking-wider text-slate-500">Reports</p>
+                <p className="mt-3 text-4xl font-semibold text-slate-900">{site?.reports ?? 0}</p>
+                <p className="mt-2 text-xs text-slate-400">Total entries</p>
+              </div>
             </div>
           </div>
-        </>
+        </div>
       )}
     </div>
   );

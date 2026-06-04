@@ -17,28 +17,26 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     <div className="min-h-screen bg-slate-50 text-slate-900">
       <div className="lg:flex lg:items-stretch">
         <aside
-          className={`fixed inset-y-0 left-0 z-40 w-72 h-screen transform border-r border-slate-200 bg-white p-6 shadow-lg shadow-slate-900/5 transition-transform duration-300 lg:h-screen lg:translate-x-0 lg:block overflow-y-auto ${
+          className={`fixed inset-y-0 left-0 z-40 w-72 h-screen transform border-r border-slate-200/60 bg-gradient-to-b from-white to-slate-50/30 p-5 shadow-xl shadow-slate-900/5 transition-transform duration-300 lg:h-screen lg:translate-x-0 lg:block overflow-y-auto ${
             menuOpen ? 'translate-x-0' : '-translate-x-full'
           }`}
         >
           <div className="flex h-full flex-col justify-between">
-            <div className="space-y-8">
-              <div className="space-y-4">
-                <div className="inline-flex items-center gap-2 rounded-full bg-brand-50 px-3 py-2 text-sm font-semibold text-brand-700 shadow-sm">
+            <div className="space-y-6">
+              <div className="space-y-3 border-b border-slate-200/60 pb-5">
+                <div className="inline-flex items-center gap-2 rounded-lg bg-gradient-to-r from-brand-500 to-brand-600 px-3 py-2 text-sm font-semibold tracking-wide text-white shadow-sm">
                   <span>MBHUB CMS</span>
                 </div>
-                <p className="text-sm text-slate-600">A unified, polished admin experience for Atlantic Dunes website client management.</p>
+                <p className="text-xs leading-relaxed text-slate-500">Professional admin experience for Atlantic Dunes client management.</p>
               </div>
 
-              <nav className="space-y-2">
-                <DashboardNav />
-              </nav>
+              <DashboardNav />
             </div>
 
             <button
               type="button"
               onClick={handleLogout}
-              className="w-full rounded-3xl border border-brand-200 bg-brand-500 px-4 py-3 text-sm font-semibold text-white transition hover:bg-brand-600"
+              className="w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-medium text-slate-700 shadow-sm transition-all duration-200 hover:bg-slate-50 hover:text-slate-900 hover:shadow"
             >
               Logout
             </button>
