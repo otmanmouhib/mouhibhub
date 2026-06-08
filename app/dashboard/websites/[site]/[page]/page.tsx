@@ -5,7 +5,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import { fetchWithAuthRedirect } from 'lib/fetch-client';
-import AtlanticDunesForm from 'components/atlanticdunes-form';
+import AtlanticDunesForm from 'components/atlanticdunes-form-improved';
 
 const pageMetadata: Record<string, { title: string; description: string }> = {
   'manage-services': {
@@ -36,22 +36,17 @@ const pageMetadata: Record<string, { title: string; description: string }> = {
     title: 'Manage news articles',
     description: 'Create, edit, and publish news articles for this website.',
   },
-  'manage-news-categories': {
-    title: 'Manage news categories',
-    description: 'Create and organize news categories for articles.',
-  },
   'manage-report-tickets': {
     title: 'Manage report tickets',
     description: 'Track and respond to report tickets raised by website users.',
   },
 };
 
-const collectionMap: Record<string, 'products' | 'services' | 'boutique' | 'news' | 'newsCategories'> = {
+const collectionMap: Record<string, 'products' | 'services' | 'boutique' | 'news'> = {
   'manage-products': 'products',
   'manage-services': 'services',
   'manage-boutique': 'boutique',
   'manage-news': 'news',
-  'manage-news-categories': 'newsCategories',
 };
 
 type ItemRecord = {
@@ -118,6 +113,11 @@ export default function SiteManagementPage() {
   const apiPrefix = useMemo(() => (siteName ? `/api/${siteName}` : '/api/atlanticdunes'), [siteName]);
   const metadata = useMemo(() => pageMetadata[pageKey], [pageKey]);
   const collection = useMemo(() => collectionMap[pageKey], [pageKey]);
+  useEffect(() => {
+    if (pageKey === 'manage-news-categories' && supportedSite) {
+      router.replace(`/dashboard/websites/${siteName}/manage-news`);
+    }
+  }, [pageKey, router, siteName, supportedSite]);
 
   const isProducts = pageKey === 'manage-products';
   const isServices = pageKey === 'manage-services';

@@ -14,10 +14,10 @@ export default function DashboardShell({ children }: { children: React.ReactNode
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-900">
+    <div className="min-h-screen bg-white text-brand-900">
       <div className="lg:flex lg:items-stretch">
         <aside
-          className={`fixed inset-y-0 left-0 z-40 w-72 h-screen transform border-r border-slate-200 bg-white p-6 shadow-lg shadow-slate-900/5 transition-transform duration-300 lg:h-screen lg:translate-x-0 lg:block overflow-y-auto ${
+          className={`fixed inset-y-0 left-0 z-40 w-72 h-screen transform border-r border-brand-200 bg-white p-6 shadow-lg shadow-brand-900/5 transition-transform duration-300 lg:h-screen lg:translate-x-0 lg:block overflow-y-auto ${
             menuOpen ? 'translate-x-0' : '-translate-x-full'
           }`}
         >
@@ -27,7 +27,7 @@ export default function DashboardShell({ children }: { children: React.ReactNode
                 <div className="inline-flex items-center gap-2 rounded-full bg-brand-50 px-3 py-2 text-sm font-semibold text-brand-700 shadow-sm">
                   <span>MBHUB CMS</span>
                 </div>
-                <p className="text-sm text-slate-600">A unified, polished admin experience for Atlantic Dunes website client management.</p>
+                <p className="text-sm text-brand-700">A unified, polished admin experience for Atlantic Dunes website client management.</p>
               </div>
 
               <nav className="space-y-2">
@@ -47,17 +47,17 @@ export default function DashboardShell({ children }: { children: React.ReactNode
 
         {menuOpen && (
           <div
-            className="fixed inset-0 z-30 bg-slate-900/40 backdrop-blur-sm lg:hidden"
+            className="fixed inset-0 z-30 bg-brand-900/40 backdrop-blur-sm lg:hidden"
             onClick={() => setMenuOpen(false)}
           />
         )}
 
         <div className="flex-1 lg:ml-72">
-          <div className="sticky top-0 z-30 flex items-center justify-between border-b border-slate-200 bg-white px-4 py-3 shadow-sm lg:hidden">
+          <div className="sticky top-0 z-30 flex items-center justify-between border-b border-brand-200 bg-white px-4 py-3 shadow-sm lg:hidden">
             <button
               type="button"
               onClick={() => setMenuOpen((current) => !current)}
-              className="inline-flex items-center justify-center rounded-lg border border-slate-300 bg-slate-100 p-2 text-slate-700 transition hover:border-brand-500"
+              className="inline-flex items-center justify-center rounded-lg border border-brand-300 bg-brand-50 p-2 text-brand-800 transition hover:border-brand-500"
               aria-label="Toggle sidebar"
             >
               <svg viewBox="0 0 24 24" className="h-6 w-6" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -66,7 +66,7 @@ export default function DashboardShell({ children }: { children: React.ReactNode
                 <line x1="3" y1="18" x2="21" y2="18" />
               </svg>
             </button>
-            <span className="text-sm font-semibold text-slate-900">MBHUB CMS</span>
+            <span className="text-sm font-semibold text-brand-900">MBHUB CMS</span>
           </div>
 
           <main className="p-6">{children}</main>

@@ -38,11 +38,11 @@ export default function AtlanticDunesPage() {
 
   return (
     <div className="space-y-8 p-6">
-      <div className="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-sm shadow-slate-900/5">
+      <div className="rounded-[2rem] border border-brand-200 bg-white p-6 shadow-sm shadow-brand-900/5">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
           <div>
-            <h2 className="text-2xl font-semibold text-slate-900">Atlantic Dunes Collections</h2>
-            <p className="mt-2 text-sm text-slate-600">Choose a collection to manage, then add or edit records from the next screen.</p>
+            <h2 className="text-2xl font-semibold text-brand-900">Atlantic Dunes Collections</h2>
+            <p className="mt-2 text-sm text-brand-700">Choose a collection to manage, then add or edit records from the next screen.</p>
           </div>
         </div>
       </div>

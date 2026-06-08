@@ -41,6 +41,14 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     'contacts',
     'reports',
     'users',
+    'services',
+    'products',
+    'boutique',
+    'poles',
+    'domains',
+    'news',
+    'newsCategories',
+    'images',
   ]);
 
   const contactCount = availableCollections.includes('contacts')
@@ -49,12 +57,44 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
   const reportCount = availableCollections.includes('reports')
     ? await getCollectionCount(site.db, 'reports')
     : 0;
+  const servicesCount = availableCollections.includes('services')
+    ? await getCollectionCount(site.db, 'services')
+    : 0;
+  const productsCount = availableCollections.includes('products')
+    ? await getCollectionCount(site.db, 'products')
+    : 0;
+  const boutiqueCount = availableCollections.includes('boutique')
+    ? await getCollectionCount(site.db, 'boutique')
+    : 0;
+  const polesCount = availableCollections.includes('poles')
+    ? await getCollectionCount(site.db, 'poles')
+    : 0;
+  const domainsCount = availableCollections.includes('domains')
+    ? await getCollectionCount(site.db, 'domains')
+    : 0;
+  const newsCount = availableCollections.includes('news')
+    ? await getCollectionCount(site.db, 'news')
+    : 0;
+  const newsCategoriesCount = availableCollections.includes('newsCategories')
+    ? await getCollectionCount(site.db, 'newsCategories')
+    : 0;
+  const imagesCount = availableCollections.includes('images')
+    ? await getCollectionCount(site.db, 'images')
+    : 0;
 
   return NextResponse.json({
     site: {
       ...site,
       contacts: contactCount,
       reports: reportCount,
+      services: servicesCount,
+      products: productsCount,
+      boutique: boutiqueCount,
+      poles: polesCount,
+      domains: domainsCount,
+      news: newsCount,
+      newsCategories: newsCategoriesCount,
+      images: imagesCount,
       availableCollections,
       lastSeen: 'today',
     },

@@ -1,7 +1,7 @@
 'use client';
 
 import { useParams } from 'next/navigation';
-import AtlanticDunesForm from 'components/atlanticdunes-form';
+import AtlanticDunesForm from 'components/atlanticdunes-form-improved';
 
 export default function AtlanticDunesCreatePage() {
   const params = useParams();
