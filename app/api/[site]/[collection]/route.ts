@@ -24,6 +24,14 @@ function badRequest(message: string) {
   });
 }
 
+async function resolveCollectionName(db: any, collection: string) {
+  if (collection !== 'boutique') return collection;
+  const boutiqueExists = await db.listCollections({ name: 'boutique' }, { nameOnly: true }).hasNext();
+  if (boutiqueExists) return 'boutique';
+  const boutiqueProductsExists = await db.listCollections({ name: 'boutiqueProducts' }, { nameOnly: true }).hasNext();
+  return boutiqueProductsExists ? 'boutiqueProducts' : 'boutique';
+}
+
 export async function GET(request: NextRequest, context: { params: Promise<{ site: string; collection: string }> }) {
   const { site, collection } = await context.params;
   const token = request.cookies.get('mouhibhub-auth')?.value ?? null;
@@ -36,8 +44,9 @@ export async function GET(request: NextRequest, context: { params: Promise<{ sit
   }
 
   const db = await getSiteDb(site);
+  const collectionName = await resolveCollectionName(db, collection);
   const items = await db
-    .collection(collection)
+    .collection(collectionName)
     .find({}, { sort: { _id: 1 } })
     .limit(200)
     .toArray();
@@ -70,11 +79,12 @@ export async function POST(request: NextRequest, context: { params: Promise<{ si
 
   try {
     const db = await getSiteDb(site);
-    const existing = await db.collection(collection).findOne({ _id: id as any });
+    const collectionName = await resolveCollectionName(db, collection);
+    const existing = await db.collection(collectionName).findOne({ _id: id as any });
     if (existing) {
       throw new Error('A document with that identifier already exists.');
     }
-    await db.collection(collection).insertOne(payload);
+    await db.collection(collectionName).insertOne(payload);
     return new NextResponse(JSON.stringify({ ok: true, document: payload }), {
       status: 201,
       headers: { 'Content-Type': 'application/json' },
@@ -99,7 +109,8 @@ export async function DELETE(request: NextRequest, context: { params: Promise<{ 
   }
 
   const db = await getSiteDb(site);
-  const result = await db.collection(collection).deleteMany({});
+  const collectionName = await resolveCollectionName(db, collection);
+  const result = await db.collection(collectionName).deleteMany({});
 
   return NextResponse.json({ ok: true, deletedCount: result.deletedCount });
 }

@@ -44,12 +44,19 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     'services',
     'products',
     'boutique',
+    'boutiqueProducts',
     'poles',
     'domains',
     'news',
     'newsCategories',
     'images',
   ]);
+
+  const boutiqueCollectionName = availableCollections.includes('boutique')
+    ? 'boutique'
+    : availableCollections.includes('boutiqueProducts')
+      ? 'boutiqueProducts'
+      : undefined;
 
   const contactCount = availableCollections.includes('contacts')
     ? await getCollectionCount(site.db, 'contacts')
@@ -63,9 +70,14 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
   const productsCount = availableCollections.includes('products')
     ? await getCollectionCount(site.db, 'products')
     : 0;
-  const boutiqueCount = availableCollections.includes('boutique')
-    ? await getCollectionCount(site.db, 'boutique')
+  const boutiqueCount = boutiqueCollectionName
+    ? await getCollectionCount(site.db, boutiqueCollectionName)
     : 0;
+
+  const normalizedAvailableCollections = boutiqueCollectionName === 'boutiqueProducts'
+    ? [...availableCollections.filter((name) => name !== 'boutiqueProducts'), 'boutique']
+    : availableCollections;
+
   const polesCount = availableCollections.includes('poles')
     ? await getCollectionCount(site.db, 'poles')
     : 0;
@@ -95,7 +107,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
       news: newsCount,
       newsCategories: newsCategoriesCount,
       images: imagesCount,
-      availableCollections,
+      availableCollections: normalizedAvailableCollections,
       lastSeen: 'today',
     },
   });
