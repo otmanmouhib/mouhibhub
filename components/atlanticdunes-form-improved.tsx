@@ -740,7 +740,7 @@ export default function AtlanticDunesForm({ collectionName, mode, itemId, siteNa
     setFormData((prev) => {
       const list = Array.isArray(prev[fieldName]) ? [...prev[fieldName]] : [];
       const item = { ...list[index], [key]: value };
-      if (fieldName === 'domains' && key === 'label') {
+      if (key === 'label' && typeof item.slug !== 'undefined') {
         item.slug = slugify(value);
       }
       list[index] = item;

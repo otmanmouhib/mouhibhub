@@ -546,20 +546,44 @@ export default function SiteManagementPage() {
           alt={item.title ?? item.slug ?? 'Item image'}
           className="h-64 w-full object-cover"
         />
+      ) : (collection === 'boutiqueCategories' ? (
+        <div className="flex h-64 flex-col items-center justify-center gap-3 bg-gradient-to-br from-slate-900 to-brand-500 text-white">
+          <div className="text-6xl">{item.icon ?? '🛍️'}</div>
+          <div className="text-center px-6">
+            <p className="text-sm uppercase tracking-[0.24em] text-slate-200">Boutique category</p>
+            <p className="mt-2 text-2xl font-semibold">{item.label ?? item.slug}</p>
+          </div>
+        </div>
+      ) : collection === 'newsCategories' ? (
+        <div className="flex h-64 flex-col items-center justify-center gap-3 bg-gradient-to-br from-slate-900 to-sky-500 text-white">
+          <div className="text-6xl">🗞️</div>
+          <div className="text-center px-6">
+            <p className="text-sm uppercase tracking-[0.24em] text-slate-200">News category</p>
+            <p className="mt-2 text-2xl font-semibold">{item.label ?? item.slug}</p>
+          </div>
+        </div>
       ) : (
         <div className="flex h-64 items-center justify-center bg-slate-100 text-slate-500">No image available</div>
-      )}
+      ))}
 
       <div className="space-y-4 p-6">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
           <div>
             <p className="text-xs uppercase tracking-[0.24em] text-brand-500">{item.slug}</p>
-            <h2 className="mt-2 text-2xl font-semibold text-slate-900">{item.title ?? `${segmentLabel(collection ?? '')} details`}</h2>
+            <h2 className="mt-2 text-2xl font-semibold text-slate-900">{item.title ?? item.label ?? `${segmentLabel(collection ?? '')} details`}</h2>
+            {item.label && !item.title ? <p className="mt-1 text-sm text-slate-500">{item.label}</p> : null}
           </div>
           <div className="space-y-2 text-right">
             {renderMetadataBadge(collection ?? '', item)}
           </div>
         </div>
+
+        {item.icon ? (
+          <div className="inline-flex items-center gap-2 rounded-full bg-slate-100 px-3 py-1 text-sm font-semibold text-slate-700">
+            <span>{item.icon}</span>
+            <span>Category icon</span>
+          </div>
+        ) : null}
 
         {item.shortDescription ? <p className="text-sm text-slate-600">{item.shortDescription}</p> : null}
         {item.description ? <div className="rounded-3xl bg-slate-50 p-4 text-sm text-slate-700">{item.description}</div> : null}
@@ -594,6 +618,27 @@ export default function SiteManagementPage() {
         ) : null}
 
         {renderItemDetails(collection ?? '', item)}
+
+        {(collection === 'boutiqueCategories' || collection === 'newsCategories') && Array.isArray(item.subcategories) && item.subcategories.length > 0 ? (
+          <div className="rounded-3xl border border-slate-200 bg-slate-50 p-4">
+            <div className="flex items-center justify-between gap-4">
+              <div>
+                <p className="text-sm font-semibold text-slate-900">Subcategories</p>
+                <p className="text-xs text-slate-500">Manage nested subcategories for this category.</p>
+              </div>
+              <span className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-500">{item.subcategories.length}</span>
+            </div>
+            <div className="mt-4 grid gap-3 sm:grid-cols-2">
+              {item.subcategories.map((subcategory: any, index: number) => (
+                <div key={index} className="rounded-3xl bg-white p-4 shadow-sm border border-slate-200">
+                  <p className="text-sm font-semibold text-slate-900">{subcategory.label ?? subcategory.slug}</p>
+                  <p className="mt-1 text-xs text-slate-500">{subcategory.slug}</p>
+                  {subcategory.description ? <p className="mt-2 text-sm text-slate-600">{subcategory.description}</p> : null}
+                </div>
+              ))}
+            </div>
+          </div>
+        ) : null}
 
         {item.pdfLink ? (
           <a
