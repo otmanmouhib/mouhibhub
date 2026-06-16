@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { useParams, useRouter } from 'next/navigation';
+import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { toast } from 'sonner';
 import { fetchWithAuthRedirect } from 'lib/fetch-client';
 import AtlanticDunesForm from 'components/atlanticdunes-form-improved';
@@ -36,17 +36,27 @@ const pageMetadata: Record<string, { title: string; description: string }> = {
     title: 'Manage news articles',
     description: 'Create, edit, and publish news articles for this website.',
   },
+  'manage-news-categories': {
+    title: 'Manage news categories',
+    description: 'CRUD news categories and subcategories used by news articles.',
+  },
+  'manage-boutique-categories': {
+    title: 'Manage boutique categories',
+    description: 'CRUD boutique categories and subcategories for the boutique store.',
+  },
   'manage-report-tickets': {
     title: 'Manage report tickets',
     description: 'Track and respond to report tickets raised by website users.',
   },
 };
 
-const collectionMap: Record<string, 'products' | 'services' | 'boutique' | 'news'> = {
+const collectionMap: Record<string, 'products' | 'services' | 'boutique' | 'news' | 'newsCategories' | 'boutiqueCategories'> = {
   'manage-products': 'products',
   'manage-services': 'services',
   'manage-boutique': 'boutique',
+  'manage-boutique-categories': 'boutiqueCategories',
   'manage-news': 'news',
+  'manage-news-categories': 'newsCategories',
 };
 
 type ItemRecord = {
@@ -78,7 +88,7 @@ type ImageItem = { _id: string; filename: string };
 type ContactRecord = { _id: string; name?: string; email?: string; message?: string; phone?: string; status?: string; createdAt?: string };
 
 type RelatedMap = Record<string, string>;
-type RelatedItem = { _id: string; label?: string; slug?: string; filename?: string };
+type RelatedItem = { _id: string; label?: string; slug?: string; filename?: string; id?: string };
 
 function formatMoney(price: number | string | undefined, currency: string | undefined) {
   if (price === undefined || price === null || price === '') return '';
@@ -89,6 +99,7 @@ function formatMoney(price: number | string | undefined, currency: string | unde
 function segmentLabel(collection: string) {
   if (collection === 'services') return 'Service';
   if (collection === 'boutique') return 'Boutique item';
+  if (collection === 'boutiqueCategories') return 'Boutique category';
   if (collection === 'newsCategories') return 'News category';
   if (collection === 'news') return 'News article';
   return 'Product';
@@ -97,6 +108,7 @@ function segmentLabel(collection: string) {
 function collectionDescription(collection: string) {
   if (collection === 'services') return 'Service entries for your website.';
   if (collection === 'boutique') return 'Boutique products and boutique-specific content.';
+  if (collection === 'boutiqueCategories') return 'Boutique category records used to organize boutique inventory.';
   if (collection === 'newsCategories') return 'Categories used to organize news articles.';
   if (collection === 'news') return 'News articles and announcements published on the website.';
   return 'Product listings with pricing and categories.';
@@ -113,11 +125,11 @@ export default function SiteManagementPage() {
   const apiPrefix = useMemo(() => (siteName ? `/api/${siteName}` : '/api/atlanticdunes'), [siteName]);
   const metadata = useMemo(() => pageMetadata[pageKey], [pageKey]);
   const collection = useMemo(() => collectionMap[pageKey], [pageKey]);
-  useEffect(() => {
-    if (pageKey === 'manage-news-categories' && supportedSite) {
-      router.replace(`/dashboard/websites/${siteName}/manage-news`);
-    }
-  }, [pageKey, router, siteName, supportedSite]);
+  const searchParams = useSearchParams();
+  const selectedPole = searchParams.get('pole') ?? undefined;
+  const selectedDomain = searchParams.get('domain') ?? undefined;
+  const selectedCategory = searchParams.get('category') ?? undefined;
+  const selectedSubcategory = searchParams.get('subcategory') ?? undefined;
 
   const isProducts = pageKey === 'manage-products';
   const isServices = pageKey === 'manage-services';
@@ -151,8 +163,15 @@ export default function SiteManagementPage() {
         const items = Array.isArray(data.items) ? (data.items as RelatedItem[]) : [];
         setMap(
           items.reduce<RelatedMap>((acc, item) => {
-            const key = String(item._id);
-            acc[key] = item[labelField] ?? item.slug ?? item.filename ?? key;
+            const keyById = String(item._id);
+            const label = item[labelField] ?? item.slug ?? item.filename ?? keyById;
+            acc[keyById] = label;
+            if (item.slug) {
+              acc[item.slug] = label;
+            }
+            if (item.id) {
+              acc[item.id] = label;
+            }
             return acc;
           }, {}),
         );
@@ -169,7 +188,14 @@ export default function SiteManagementPage() {
     setError(null);
 
     try {
-      const response = await fetchWithAuthRedirect(router, `${apiPrefix}/${collection}`);
+      const query = new URLSearchParams();
+      if (selectedPole) query.set('pole', selectedPole);
+      if (selectedDomain) query.set('domain', selectedDomain);
+      if (selectedCategory) query.set('category', selectedCategory);
+      if (selectedSubcategory) query.set('subcategory', selectedSubcategory);
+      const queryString = query.toString() ? `?${query.toString()}` : '';
+
+      const response = await fetchWithAuthRedirect(router, `${apiPrefix}/${collection}${queryString}`);
       if (response.status === 401) return;
       if (!response.ok) {
         const payload = await response.json().catch(() => null);
@@ -182,7 +208,7 @@ export default function SiteManagementPage() {
     } finally {
       setLoading(false);
     }
-  }, [collection, router, supportedSite, apiPrefix]);
+  }, [collection, router, selectedDomain, selectedPole, supportedSite, apiPrefix]);
 
   const loadGallery = useCallback(async () => {
     if (!supportedSite) return;
@@ -389,10 +415,18 @@ export default function SiteManagementPage() {
               </ul>
             </div>
           ) : null}
-          {item.deliverable ? (
+          {(Array.isArray(item.deliverables) && item.deliverables.length > 0) || item.deliverable ? (
             <div className="rounded-3xl bg-slate-50 p-4 text-sm text-slate-700">
-              <p className="font-semibold text-slate-900">Deliverable</p>
-              <p className="mt-2">{item.deliverable}</p>
+              <p className="font-semibold text-slate-900">Deliverables</p>
+              {Array.isArray(item.deliverables) && item.deliverables.length > 0 ? (
+                <ul className="mt-2 list-disc space-y-1 pl-5">
+                  {item.deliverables.map((deliverable, idx) => (
+                    <li key={idx}>{deliverable}</li>
+                  ))}
+                </ul>
+              ) : (
+                <p className="mt-2">{item.deliverable}</p>
+              )}
             </div>
           ) : null}
         </div>
@@ -459,19 +493,49 @@ export default function SiteManagementPage() {
       );
     }
 
-    return Array.isArray(item.specs) && item.specs.length > 0 ? (
-      <div className="rounded-3xl border border-slate-200 bg-slate-50 p-4">
-        <h3 className="text-sm font-semibold text-slate-900">Specs</h3>
-        <dl className="mt-3 space-y-2 text-sm text-slate-700">
-          {item.specs.map((spec, index) => (
-            <div key={index} className="grid gap-1 sm:grid-cols-[130px_1fr]">
-              <dt className="font-semibold text-slate-900">{spec.label ?? 'Label'}</dt>
-              <dd>{spec.value ?? '-'}</dd>
-            </div>
-          ))}
-        </dl>
-      </div>
-    ) : null;
+    if (Array.isArray(item.specs) && item.specs.length > 0) {
+      return (
+        <div className="rounded-3xl border border-slate-200 bg-slate-50 p-4">
+          <h3 className="text-sm font-semibold text-slate-900">Specs</h3>
+          <dl className="mt-3 space-y-2 text-sm text-slate-700">
+            {item.specs.map((spec, index) => (
+              <div key={index} className="grid gap-1 sm:grid-cols-[130px_1fr]">
+                <dt className="font-semibold text-slate-900">{spec.label ?? 'Label'}</dt>
+                <dd>{spec.value ?? '-'}</dd>
+              </div>
+            ))}
+          </dl>
+        </div>
+      );
+    }
+
+    if (Array.isArray(item.features) && item.features.length > 0) {
+      return (
+        <div className="rounded-3xl border border-slate-200 bg-slate-50 p-4">
+          <h3 className="text-sm font-semibold text-slate-900">Features</h3>
+          <ul className="mt-3 list-disc space-y-1 pl-5 text-sm text-slate-700">
+            {item.features.map((feature, index) => (
+              <li key={index}>{feature}</li>
+            ))}
+          </ul>
+        </div>
+      );
+    }
+
+    if (Array.isArray(item.detail) && item.detail.length > 0) {
+      return (
+        <div className="rounded-3xl border border-slate-200 bg-slate-50 p-4">
+          <h3 className="text-sm font-semibold text-slate-900">Details</h3>
+          <ul className="mt-3 list-disc space-y-1 pl-5 text-sm text-slate-700">
+            {item.detail.map((detail, index) => (
+              <li key={index}>{detail}</li>
+            ))}
+          </ul>
+        </div>
+      );
+    }
+
+    return null;
   };
 
   const renderItemCard = (item: ItemRecord) => (
@@ -500,18 +564,25 @@ export default function SiteManagementPage() {
         {item.shortDescription ? <p className="text-sm text-slate-600">{item.shortDescription}</p> : null}
         {item.description ? <div className="rounded-3xl bg-slate-50 p-4 text-sm text-slate-700">{item.description}</div> : null}
 
-        <div className="grid gap-3 sm:grid-cols-2">
-          {item.domainId ? (
-            <div className="rounded-3xl bg-slate-50 p-4 text-sm text-slate-700">
-              <p className="text-xs uppercase tracking-[0.24em] text-slate-500">Domain</p>
-              <p className="mt-2 font-semibold text-slate-900">{domainMap[item.domainId] ?? item.domainId}</p>
-            </div>
+        <div className="flex flex-wrap gap-2">
+          {item.domain || item.domainId ? (
+            <span className="inline-flex items-center rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-slate-700 ring-1 ring-slate-200">
+              {item.domain ? item.domain : item.domainId ? domainMap[String(item.domainId)] ?? item.domainId : ''}
+            </span>
+          ) : collection === 'products' || collection === 'services' ? (
+            <span className="inline-flex items-center rounded-full bg-rose-50 px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-rose-700 ring-1 ring-rose-200">
+              Domain missing
+            </span>
           ) : null}
-          {item.poleId ? (
-            <div className="rounded-3xl bg-slate-50 p-4 text-sm text-slate-700">
-              <p className="text-xs uppercase tracking-[0.24em] text-slate-500">Pole</p>
-              <p className="mt-2 font-semibold text-slate-900">{poleMap[item.poleId] ?? item.poleId}</p>
-            </div>
+
+          {item.pole || item.poleId ? (
+            <span className="inline-flex items-center rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-slate-700 ring-1 ring-slate-200">
+              {item.pole ? item.pole : item.poleId ? poleMap[String(item.poleId)] ?? item.poleId : ''}
+            </span>
+          ) : collection === 'products' || collection === 'services' ? (
+            <span className="inline-flex items-center rounded-full bg-rose-50 px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-rose-700 ring-1 ring-rose-200">
+              Pole missing
+            </span>
           ) : null}
         </div>
 

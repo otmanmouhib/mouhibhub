@@ -1,5 +1,5 @@
 export type RelationField = {
-  collection: 'poles' | 'domains' | 'newsCategories' | 'images';
+  collection: 'poles' | 'domains' | 'newsCategories' | 'boutiqueCategories' | 'images';
   labelField?: 'label' | 'slug' | 'id' | 'filename';
   valueField?: 'slug' | 'id' | '_id';
   multi?: boolean;
@@ -25,7 +25,7 @@ export type AtlanticDunesField = {
   options?: Array<{ label: string; value: string }>;
   relation?: RelationField;
   itemLabel?: string;
-  itemFields?: Array<{ name: string; label: string; type: 'text' | 'number' | 'textarea' }>;
+  itemFields?: Array<{ name: string; label: string; type: 'text' | 'number' | 'textarea' | 'slug'; required?: boolean; description?: string }>;
 };
 
 export type AtlanticDunesCollectionSchema = {
@@ -47,6 +47,17 @@ export const collectionSchemas: Record<string, AtlanticDunesCollectionSchema> = 
       { name: 'slug', label: 'Slug', type: 'slug', required: true, description: 'Unique identifier used in URLs.' },
       { name: 'label', label: 'Label', type: 'text', required: true, description: 'Display name shown on the website.' },
       { name: 'shortDescription', label: 'Short description', type: 'textarea', required: true, description: 'A brief description for navigation cards.' },
+      {
+        name: 'domains',
+        label: 'Domains',
+        type: 'objectArray',
+        itemLabel: 'Domain',
+        itemFields: [
+          { name: 'label', label: 'Label', type: 'text' },
+          { name: 'description', label: 'Description', type: 'textarea' },
+        ],
+        description: 'Nested domain items for this pole.',
+      },
     ],
   },
   domains: {
@@ -69,6 +80,18 @@ export const collectionSchemas: Record<string, AtlanticDunesCollectionSchema> = 
       { name: 'id', label: 'Category ID', type: 'text', required: true, description: 'Unique category identifier.' },
       { name: 'label', label: 'Label', type: 'text', required: true, description: 'Category display name.' },
       { name: 'description', label: 'Description', type: 'textarea', required: true, description: 'What this news category is for.' },
+      {
+        name: 'subcategories',
+        label: 'Subcategories',
+        type: 'objectArray',
+        itemLabel: 'Subcategory',
+        itemFields: [
+          { name: 'slug', label: 'Slug', type: 'slug', required: true, description: 'Unique identifier for the subcategory.' },
+          { name: 'label', label: 'Label', type: 'text', required: true, description: 'Display name for the subcategory.' },
+          { name: 'description', label: 'Description', type: 'textarea', description: 'Optional description for this subcategory.' },
+        ],
+        description: 'Nested news subcategories grouped under this news category.',
+      },
     ],
   },
   services: {
@@ -154,6 +177,7 @@ export const collectionSchemas: Record<string, AtlanticDunesCollectionSchema> = 
       { name: 'date', label: 'Display date', type: 'date', required: true, description: 'The date shown on the article.' },
       { name: 'publishedAt', label: 'Published at', type: 'date', required: true, description: 'Publication date for the article.' },
       { name: 'categoryId', label: 'Category', type: 'select', required: true, relation: { collection: 'newsCategories', labelField: 'label', valueField: 'id' } },
+      { name: 'subcategory', label: 'Subcategory', type: 'select', description: 'Select the news subcategory for the chosen category.' },
       { name: 'summary', label: 'Summary', type: 'textarea', required: true },
       { name: 'excerpt', label: 'Excerpt', type: 'textarea', description: 'Short preview text for listings.' },
       { name: 'author', label: 'Author', type: 'text', description: 'Article author name.' },
@@ -181,6 +205,135 @@ export const collectionSchemas: Record<string, AtlanticDunesCollectionSchema> = 
   },
 };
 
-export function getCollectionSchema(collectionName: string): AtlanticDunesCollectionSchema | undefined {
+const adrobiofarmCollectionSchemas: Record<string, AtlanticDunesCollectionSchema> = {
+  poles: {
+    collection: 'poles',
+    label: 'Poles',
+    description: 'Business poles used to classify services, products, and boutique offerings.',
+    idField: 'slug',
+    fields: [
+      { name: 'slug', label: 'Slug', type: 'slug', required: true, description: 'Unique identifier used in URLs.' },
+      { name: 'label', label: 'Label', type: 'text', required: true, description: 'Display name for the pole.' },
+      { name: 'shortDescription', label: 'Short description', type: 'textarea', required: true, description: 'A brief summary of the pole.' },
+      { name: 'icon', label: 'Icon', type: 'text', description: 'Emoji or icon used to represent the pole.' },
+      { name: 'color', label: 'Color', type: 'text', description: 'Hex color associated with the pole.' },
+      {
+        name: 'domains',
+        label: 'Domains',
+        type: 'objectArray',
+        itemLabel: 'Domain',
+        itemFields: [
+          { name: 'label', label: 'Label', type: 'text' },
+          { name: 'description', label: 'Description', type: 'textarea' },
+        ],
+        description: 'List of domains nested under this pole.',
+      },
+    ],
+  },
+  products: {
+    collection: 'products',
+    label: 'Products',
+    description: 'Product offers linked to a pole and domain.',
+    idField: 'slug',
+    fields: [
+      { name: 'slug', label: 'Slug', type: 'slug', required: true, description: 'Unique product identifier.' },
+      { name: 'title', label: 'Title', type: 'text', required: true, description: 'Product title shown on the website.' },
+      { name: 'pole', label: 'Pole', type: 'select', required: true, relation: { collection: 'poles', labelField: 'label', valueField: 'slug' }, description: 'Select the pole that this product belongs to.' },
+      { name: 'domain', label: 'Domain', type: 'select', required: true, relation: { collection: 'domains', labelField: 'label', valueField: 'slug' }, description: 'Select the domain that this product belongs to.' },
+      { name: 'category', label: 'Category', type: 'text', description: 'Product category metadata.' },
+      { name: 'shortDescription', label: 'Short description', type: 'textarea', required: true },
+      { name: 'description', label: 'Description', type: 'textarea' },
+      { name: 'features', label: 'Features', type: 'stringArray', description: 'Key product features.' },
+      { name: 'price', label: 'Price', type: 'number', description: 'Product price.' },
+      { name: 'stock', label: 'Stock', type: 'text', description: 'Stock status label.' },
+      { name: 'image', label: 'Image', type: 'text', description: 'Image URL or asset reference.' },
+      { name: 'tags', label: 'Tags', type: 'stringArray', description: 'Optional product tags.' },
+    ],
+  },
+  services: {
+    collection: 'services',
+    label: 'Services',
+    description: 'Service offers linked to a pole and domain.',
+    idField: 'slug',
+    fields: [
+      { name: 'slug', label: 'Slug', type: 'slug', required: true, description: 'Unique service identifier.' },
+      { name: 'title', label: 'Title', type: 'text', required: true, description: 'Service title shown on the website.' },
+      { name: 'pole', label: 'Pole', type: 'select', required: true, relation: { collection: 'poles', labelField: 'label', valueField: 'slug' }, description: 'Select the pole that this service belongs to.' },
+      { name: 'domain', label: 'Domain', type: 'select', required: true, relation: { collection: 'domains', labelField: 'label', valueField: 'slug' }, description: 'Select the domain that this service belongs to.' },
+      { name: 'category', label: 'Category', type: 'text', description: 'Service category metadata.' },
+      { name: 'description', label: 'Description', type: 'textarea', required: true },
+      { name: 'methodology', label: 'Methodology', type: 'stringArray', required: true, description: 'Methodology steps for this service.' },
+      { name: 'deliverables', label: 'Deliverables', type: 'stringArray', required: true, description: 'Deliverables customers receive.' },
+      { name: 'image', label: 'Image', type: 'text', description: 'Image URL or asset reference.' },
+      { name: 'tags', label: 'Tags', type: 'stringArray', description: 'Optional service tags.' },
+    ],
+  },
+  boutique: {
+    collection: 'boutiqueProducts',
+    label: 'Boutique products',
+    description: 'Boutique catalog items with category and subcategory metadata.',
+    idField: 'slug',
+    fields: [
+      { name: 'slug', label: 'Slug', type: 'slug', required: true, description: 'Unique boutique product identifier.' },
+      { name: 'title', label: 'Title', type: 'text', required: true, description: 'Boutique product title.' },
+      { name: 'pole', label: 'Pole', type: 'select', required: true, relation: { collection: 'poles', labelField: 'label', valueField: 'slug' }, description: 'Select the pole that this boutique item belongs to.' },
+      { name: 'domain', label: 'Domain', type: 'select', required: true, relation: { collection: 'domains', labelField: 'label', valueField: 'slug' }, description: 'Select the domain that this boutique item belongs to.' },
+      { name: 'category', label: 'Category', type: 'select', required: true, relation: { collection: 'boutiqueCategories', labelField: 'label', valueField: 'slug' }, description: 'Select the boutique category for this item.' },
+      { name: 'subcategory', label: 'Subcategory', type: 'select', description: 'Select the boutique subcategory for the chosen category.' },
+      { name: 'excerpt', label: 'Excerpt', type: 'textarea', description: 'Short boutique item summary.' },
+      { name: 'description', label: 'Description', type: 'textarea', description: 'Full boutique item description.' },
+      { name: 'detail', label: 'Detail', type: 'stringArray', description: 'Detailed product features or bullet points.' },
+      { name: 'price', label: 'Price', type: 'number', description: 'Boutique item price.' },
+      { name: 'stock', label: 'Stock', type: 'text', description: 'Stock status.' },
+      { name: 'image', label: 'Image', type: 'text', description: 'Image URL or asset reference.' },
+      { name: 'tags', label: 'Tags', type: 'stringArray', description: 'Optional boutique item tags.' },
+    ],
+  },
+  news: {
+    collection: 'news',
+    label: 'News articles',
+    description: 'News posts and updates for the site.',
+    idField: 'slug',
+    fields: [
+      { name: 'slug', label: 'Slug', type: 'slug', required: true, description: 'Unique news article identifier.' },
+      { name: 'title', label: 'Title', type: 'text', required: true, description: 'News title shown on the website.' },
+      { name: 'date', label: 'Date', type: 'date', required: true, description: 'Display date for the news article.' },
+      { name: 'category', label: 'Category', type: 'text', required: true, description: 'News category label.' },
+      { name: 'excerpt', label: 'Excerpt', type: 'textarea', description: 'Short summary for listings.' },
+      { name: 'summary', label: 'Summary', type: 'textarea', required: true, description: 'Summary text shown on topology pages.' },
+      { name: 'image', label: 'Image', type: 'text', description: 'Image URL or asset reference.' },
+      { name: 'content', label: 'Content', type: 'stringArray', required: true, description: 'Paragraphs or content blocks for the news article.' },
+    ],
+  },
+  boutiqueCategories: {
+    collection: 'boutiqueCategories',
+    label: 'Boutique categories',
+    description: 'Category metadata for boutique catalog items.',
+    idField: 'slug',
+    fields: [
+      { name: 'slug', label: 'Slug', type: 'slug', required: true, description: 'Unique boutique category identifier.' },
+      { name: 'label', label: 'Label', type: 'text', required: true, description: 'Boutique category display name.' },
+      { name: 'icon', label: 'Icon', type: 'text', description: 'Emoji or symbol used for the category.' },
+      { name: 'description', label: 'Description', type: 'textarea', required: true, description: 'Description of this boutique category.' },
+      {
+        name: 'subcategories',
+        label: 'Subcategories',
+        type: 'objectArray',
+        itemLabel: 'Subcategory',
+        itemFields: [
+          { name: 'slug', label: 'Slug', type: 'slug', required: true, description: 'Unique identifier for the subcategory.' },
+          { name: 'label', label: 'Label', type: 'text', required: true, description: 'Display name for the subcategory.' },
+          { name: 'description', label: 'Description', type: 'textarea', description: 'Optional description for this subcategory.' },
+        ],
+        description: 'Nested boutique subcategories grouped under this category.',
+      },
+    ],
+  },
+};
+
+export function getCollectionSchema(collectionName: string, siteName = 'atlanticdunes'): AtlanticDunesCollectionSchema | undefined {
+  if (siteName === 'adrobiofarm') {
+    return adrobiofarmCollectionSchemas[collectionName] || collectionSchemas[collectionName];
+  }
   return collectionSchemas[collectionName];
 }

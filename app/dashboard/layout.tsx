@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { Suspense, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import DashboardNav from '../../components/dashboard-nav';
 
@@ -30,16 +30,10 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 <p className="text-xs leading-relaxed text-slate-500">Professional admin experience for Atlantic Dunes client management.</p>
               </div>
 
-              <DashboardNav />
+              <Suspense fallback={<div className="text-sm text-slate-500">Loading navigation…</div>}>
+                <DashboardNav />
+              </Suspense>
             </div>
-
-            <button
-              type="button"
-              onClick={handleLogout}
-              className="w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-medium text-slate-700 shadow-sm transition-all duration-200 hover:bg-slate-50 hover:text-slate-900 hover:shadow"
-            >
-              Logout
-            </button>
           </div>
         </aside>
 

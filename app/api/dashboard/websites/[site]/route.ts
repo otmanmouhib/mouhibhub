@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { verifyAuthToken } from '../../../../../lib/auth';
 import { getCollectionCount, getAvailableCollections } from '../../../../../lib/mongodb';
+import { getSiteDb } from '../../../../../lib/site';
 
 const websites = [
   {
@@ -45,6 +46,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     'products',
     'boutique',
     'boutiqueProducts',
+    'boutiqueCategories',
     'poles',
     'domains',
     'news',
@@ -74,16 +76,23 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     ? await getCollectionCount(site.db, boutiqueCollectionName)
     : 0;
 
+  const siteDb = site.db;
   const normalizedAvailableCollections = boutiqueCollectionName === 'boutiqueProducts'
     ? [...availableCollections.filter((name) => name !== 'boutiqueProducts'), 'boutique']
     : availableCollections;
+
+  async function countNestedDomains() {
+    const db = await getSiteDb(siteDb);
+    const docs = await db.collection('poles').find({}, { projection: { domains: 1 } }).toArray();
+    return docs.reduce((sum, doc) => sum + (Array.isArray(doc.domains) ? doc.domains.length : 0), 0);
+  }
 
   const polesCount = availableCollections.includes('poles')
     ? await getCollectionCount(site.db, 'poles')
     : 0;
   const domainsCount = availableCollections.includes('domains')
     ? await getCollectionCount(site.db, 'domains')
-    : 0;
+    : await countNestedDomains();
   const newsCount = availableCollections.includes('news')
     ? await getCollectionCount(site.db, 'news')
     : 0;

@@ -5,6 +5,7 @@ export type AtlanticDunesCollectionName =
   | 'poles'
   | 'domains'
   | 'newsCategories'
+  | 'boutiqueCategories'
   | 'services'
   | 'products'
   | 'boutique'
@@ -17,6 +18,7 @@ export const atlanticDunesCollections: AtlanticDunesCollectionName[] = [
   'poles',
   'domains',
   'newsCategories',
+  'boutiqueCategories',
   'services',
   'products',
   'boutique',
@@ -39,6 +41,11 @@ export const collectionMetadata: Record<AtlanticDunesCollectionName, { label: st
     label: 'News categories',
     description: 'Category records for news articles.',
     idField: 'id',
+  },
+  boutiqueCategories: {
+    label: 'Boutique categories',
+    description: 'Category records for boutique items and nested subcategories.',
+    idField: 'slug',
   },
   services: {
     label: 'Services',
@@ -155,6 +162,7 @@ export function getDocumentationHint(collection: AtlanticDunesCollectionName) {
     services: 'Requires slug, title, shortDescription, description, methodology, deliverable, poleId, domainId.',
     products: 'Requires slug, title, shortDescription, description, specs, performance, poleId, domainId, pdfLink.',
     boutique: 'Requires slug, title, shortDescription, description, details, specs, price, availability, inStock, poleId, domainId.',
+    boutiqueCategories: 'Requires slug, label, description, and optional nested subcategories.',
     news: 'Requires slug, title, date, publishedAt, categoryId, summary, content.',
     entrepriseInfo: 'Single document with email, phones, addressLines, optional fax.',
   }[collection];

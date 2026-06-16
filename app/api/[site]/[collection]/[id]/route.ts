@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { ObjectId } from 'mongodb';
 import { verifyAuthToken } from '../../../../../lib/auth';
 import { getSiteDb, isSupportedSite } from '../../../../../lib/site';
 import { isAtlanticDunesCollection, resolveDocumentId } from '../../../../../lib/db';
@@ -24,6 +25,14 @@ function badRequest(message: string) {
   });
 }
 
+function buildDocumentQuery(id: string) {
+  const query = { _id: id as any };
+  if (ObjectId.isValid(id)) {
+    return { $or: [query, { _id: new ObjectId(id) }] };
+  }
+  return query;
+}
+
 export async function GET(request: NextRequest, context: { params: Promise<{ site: string; collection: string; id: string }> }) {
   const { site, collection, id } = await context.params;
   const token = request.cookies.get('mouhibhub-auth')?.value ?? null;
@@ -36,7 +45,7 @@ export async function GET(request: NextRequest, context: { params: Promise<{ sit
   }
 
   const db = await getSiteDb(site);
-  const document = await db.collection(collection).findOne({ _id: id as any });
+  const document = await db.collection(collection).findOne(buildDocumentQuery(id));
 
   if (!document) {
     return notFound('Document not found');
@@ -64,7 +73,7 @@ export async function PUT(request: NextRequest, context: { params: Promise<{ sit
   const payload = { ...body, _id: resolveDocumentId(collection, body) ?? id };
 
   const db = await getSiteDb(site);
-  const result = await db.collection(collection).replaceOne({ _id: id as any }, payload, { upsert: false });
+  const result = await db.collection(collection).replaceOne(buildDocumentQuery(id), payload, { upsert: false });
   if (result.matchedCount === 0) {
     return notFound('Document not found');
   }
@@ -84,7 +93,17 @@ export async function DELETE(request: NextRequest, context: { params: Promise<{ 
   }
 
   const db = await getSiteDb(site);
-  const result = await db.collection(collection).deleteOne({ _id: id as any });
+  const query = { _id: id as any };
+  if (ObjectId.isValid(id)) {
+    const objectId = new ObjectId(id);
+    const result = await db.collection(collection).deleteOne({ $or: [query, { _id: objectId }] });
+    if (result.deletedCount === 0) {
+      return notFound('Document not found');
+    }
+    return NextResponse.json({ ok: true });
+  }
+
+  const result = await db.collection(collection).deleteOne(query);
   if (result.deletedCount === 0) {
     return notFound('Document not found');
   }

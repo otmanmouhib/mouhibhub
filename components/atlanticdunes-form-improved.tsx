@@ -10,7 +10,7 @@ import {
   getCollectionSchema,
 } from '../lib/atlanticdunes-schema';
 
-type RelatedOption = { value: string; label: string; filename?: string };
+type RelatedOption = { value: string; label: string; filename?: string; subcategories?: Array<{ slug: string; label: string; description?: string }> };
 type RelatedOptions = Record<string, Array<RelatedOption>>;
 type UploadQueueItem = {
   id: string;
@@ -51,6 +51,24 @@ function getRecordSlug(formData: FormData) {
 
 function sanitizeFilename(value: string) {
   return value.replace(/[\\/]/g, '');
+}
+
+function getDynamicSubcategoryOptions(collectionName: string, formData: FormData, relatedOptions: RelatedOptions) {
+  if (collectionName === 'boutique') {
+    const category = String(formData.category ?? '').trim();
+    if (!category) return [];
+    const categoryOption = (relatedOptions.boutiqueCategories ?? []).find((option) => option.value === category || String((option as any).slug ?? option.value) === category);
+    return categoryOption?.subcategories?.map((subcategory) => ({ value: subcategory.slug, label: subcategory.label })) ?? [];
+  }
+
+  if (collectionName === 'news') {
+    const categoryId = String(formData.categoryId ?? '').trim();
+    if (!categoryId) return [];
+    const categoryOption = (relatedOptions.newsCategories ?? []).find((option) => option.value === categoryId || String((option as any).id ?? option.value) === categoryId);
+    return categoryOption?.subcategories?.map((subcategory) => ({ value: subcategory.slug, label: subcategory.label })) ?? [];
+  }
+
+  return [];
 }
 
 function defaultValueForField(field: AtlanticDunesField) {
@@ -136,7 +154,7 @@ export default function AtlanticDunesForm({ collectionName, mode, itemId, siteNa
   const router = useRouter();
   const effectiveSiteName = siteName ?? 'atlanticdunes';
   const apiPrefix = apiPrefixOverride ?? `/api/${effectiveSiteName}`;
-  const schema = getCollectionSchema(collectionName);
+  const schema = getCollectionSchema(collectionName, effectiveSiteName);
   const [formData, setFormData] = useState<FormData>({});
   const [relatedOptions, setRelatedOptions] = useState<RelatedOptions>({});
   const [loading, setLoading] = useState(mode === 'edit');
@@ -248,6 +266,20 @@ export default function AtlanticDunesForm({ collectionName, mode, itemId, siteNa
     loadDocument();
   }, [collectionName, itemId, mode, schema]);
 
+  const relationCollectionMeta = useMemo(() => {
+    if (!schema) return {} as Record<string, { valueField: string; labelField: string }>;
+    return schema.fields
+      .filter((field) => field.relation)
+      .reduce((acc, field) => {
+        const collection = field.relation!.collection;
+        acc[collection] = {
+          valueField: field.relation!.valueField ?? '_id',
+          labelField: field.relation!.labelField ?? 'label',
+        };
+        return acc;
+      }, {} as Record<string, { valueField: string; labelField: string }>);
+  }, [schema]);
+
   async function refreshRelatedOptions() {
     if (!relationCollections.length) return;
     const values: RelatedOptions = {};
@@ -260,11 +292,19 @@ export default function AtlanticDunesForm({ collectionName, mode, itemId, siteNa
             return;
           }
           const data = await response.json();
+          const meta = relationCollectionMeta[rel] ?? { valueField: '_id', labelField: 'label' };
           values[rel] = Array.isArray(data.items)
             ? data.items.map((item: any) => ({
-                value: String(item._id),
-                label: item.label ?? item.slug ?? item.id ?? item.filename ?? String(item._id),
+                value: String(item[meta.valueField] ?? item._id),
+                label: String(item[meta.labelField] ?? item.label ?? item.slug ?? item.id ?? item.filename ?? item._id),
                 filename: item.filename,
+                subcategories: Array.isArray(item.subcategories)
+                  ? item.subcategories.map((subcategory: any) => ({
+                      slug: String(subcategory.slug ?? subcategory.id ?? subcategory.label ?? ''),
+                      label: String(subcategory.label ?? subcategory.slug ?? ''),
+                      description: subcategory.description ?? undefined,
+                    }))
+                  : undefined,
               }))
             : [];
         } catch {
@@ -279,6 +319,22 @@ export default function AtlanticDunesForm({ collectionName, mode, itemId, siteNa
     if (!relationCollections.length) return;
     refreshRelatedOptions();
   }, [relationCollections]);
+
+  useEffect(() => {
+    if (collectionName === 'boutique') {
+      const options = getDynamicSubcategoryOptions(collectionName, formData, relatedOptions).map((option) => option.value);
+      if (formData.subcategory && !options.includes(formData.subcategory)) {
+        setFormData((prev) => ({ ...prev, subcategory: '' }));
+      }
+    }
+
+    if (collectionName === 'news') {
+      const options = getDynamicSubcategoryOptions(collectionName, formData, relatedOptions).map((option) => option.value);
+      if (formData.subcategory && !options.includes(formData.subcategory)) {
+        setFormData((prev) => ({ ...prev, subcategory: '' }));
+      }
+    }
+  }, [collectionName, formData.category, formData.categoryId, formData.subcategory, relatedOptions]);
 
   function queueImageFiles(fieldName: string, files: FileList | File[]) {
     const fileArray = Array.isArray(files) ? files : Array.from(files);
@@ -536,7 +592,7 @@ export default function AtlanticDunesForm({ collectionName, mode, itemId, siteNa
   }
 
   useEffect(() => {
-    if (!schema || mode !== 'create') return;
+    if (!schema) return;
     const slugField = schema.fields.find((field) => field.type === 'slug');
     if (!slugField) return;
 
@@ -544,13 +600,16 @@ export default function AtlanticDunesForm({ collectionName, mode, itemId, siteNa
     const labelField = schema.fields.find((field) => field.name === 'label');
     const sourceName = titleField?.name ?? labelField?.name;
     if (!sourceName) return;
+
     const sourceValue = String(formData[sourceName] ?? '');
+    const generatedSlug = slugify(sourceValue);
     const currentSlug = String(formData[slugField.name] ?? '');
 
-    if (!currentSlug && sourceValue) {
-      setFormData((prev) => ({ ...prev, [slugField.name]: slugify(sourceValue) }));
-    }
-  }, [formData.title, formData.label, mode, schema]);
+    if (!sourceValue && !currentSlug) return;
+    if (currentSlug === generatedSlug) return;
+
+    setFormData((prev) => ({ ...prev, [slugField.name]: generatedSlug }));
+  }, [formData.title, formData.label, schema]);
 
   if (!schema) {
     return <div className="p-6 text-red-600">Unknown Atlantic Dunes collection: {collectionName}</div>;
@@ -662,7 +721,10 @@ export default function AtlanticDunesForm({ collectionName, mode, itemId, siteNa
   function addArrayItem(fieldName: string, defaultValue: any = '') {
     setFormData((prev) => {
       const list = Array.isArray(prev[fieldName]) ? [...prev[fieldName]] : [];
-      return { ...prev, [fieldName]: [...list, defaultValue] };
+      const newItem = fieldName === 'domains' && defaultValue && typeof defaultValue === 'object'
+        ? { ...defaultValue, slug: '' }
+        : defaultValue;
+      return { ...prev, [fieldName]: [...list, newItem] };
     });
   }
 
@@ -678,6 +740,9 @@ export default function AtlanticDunesForm({ collectionName, mode, itemId, siteNa
     setFormData((prev) => {
       const list = Array.isArray(prev[fieldName]) ? [...prev[fieldName]] : [];
       const item = { ...list[index], [key]: value };
+      if (fieldName === 'domains' && key === 'label') {
+        item.slug = slugify(value);
+      }
       list[index] = item;
       return { ...prev, [fieldName]: list };
     });
@@ -694,6 +759,13 @@ export default function AtlanticDunesForm({ collectionName, mode, itemId, siteNa
     const payload = { ...formData };
     if (activeSchema.singleton) {
       payload._id = 'main';
+    }
+
+    if (activeSchema.fields.some((field) => field.name === 'domains') && Array.isArray(payload.domains)) {
+      payload.domains = payload.domains.map((domain: any) => ({
+        ...domain,
+        slug: slugify(String(domain?.label ?? '')),
+      }));
     }
     try {
       const url = mode === 'create' ? `${apiPrefix}/${collectionName}` : `${apiPrefix}/${collectionName}/${encodeURIComponent(itemId ?? String(formData._id))}`;
@@ -727,6 +799,10 @@ export default function AtlanticDunesForm({ collectionName, mode, itemId, siteNa
   function renderField(field: AtlanticDunesField) {
     const value = formData[field.name];
     const relationOptions = field.relation ? relatedOptions[field.relation.collection] || [] : field.options || [];
+    const dynamicSubcategoryOptions = getDynamicSubcategoryOptions(collectionName, formData, relatedOptions);
+    const selectOptions = field.name === 'subcategory' && (collectionName === 'boutique' || collectionName === 'news')
+      ? dynamicSubcategoryOptions
+      : relationOptions;
 
     switch (field.type) {
       case 'text':
@@ -818,7 +894,7 @@ export default function AtlanticDunesForm({ collectionName, mode, itemId, siteNa
               className="mt-3 w-full rounded-lg border border-brand-300/80 bg-white px-4 py-2.5 text-sm text-brand-900 outline-none transition focus:border-brand-400 focus:ring-2 focus:ring-brand-500/20"
             >
               <option value="">Select {field.label}</option>
-              {relationOptions.map((option) => (
+              {selectOptions.map((option) => (
                 <option key={option.value} value={option.value}>
                   {option.label}
                 </option>

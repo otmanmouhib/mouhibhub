@@ -33,6 +33,15 @@ export async function GET(request: NextRequest) {
         'contacts',
         'reports',
         'users',
+        'poles',
+        'domains',
+        'products',
+        'services',
+        'boutique',
+        'boutiqueProducts',
+        'boutiqueCategories',
+        'news',
+        'newsCategories',
       ]);
       const contactCount = availableCollections.includes('contacts')
         ? await getCollectionCount(site.db, 'contacts')

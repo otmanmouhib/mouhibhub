@@ -104,7 +104,7 @@ export default function AtlanticDunesForm({ collectionName, mode, itemId, siteNa
   const router = useRouter();
   const effectiveSiteName = siteName ?? 'atlanticdunes';
   const apiPrefix = apiPrefixOverride ?? `/api/${effectiveSiteName}`;
-  const schema = getCollectionSchema(collectionName);
+  const schema = getCollectionSchema(collectionName, effectiveSiteName);
   const [formData, setFormData] = useState<FormData>({});
   const [relatedOptions, setRelatedOptions] = useState<RelatedOptions>({});
   const [loading, setLoading] = useState(mode === 'edit');

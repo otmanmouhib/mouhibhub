@@ -26,13 +26,13 @@ export async function GET(request: NextRequest, context: { params: Promise<{ typ
     return NextResponse.json({ items: items.map((item) => ({ ...item, _id: String(item._id) })) });
   }
 
-  if (!['poles', 'domains', 'newsCategories'].includes(type)) {
+  if (!['poles', 'domains', 'newsCategories', 'boutiqueCategories'].includes(type)) {
     return notFound();
   }
 
   const items = await db
     .collection(type)
-    .find({}, { projection: { _id: 1, label: 1, slug: 1, id: 1 } })
+    .find({}, { projection: { _id: 1, label: 1, slug: 1, id: 1, subcategories: 1 } })
     .sort({ _id: 1 })
     .toArray();
 

@@ -45,9 +45,49 @@ export async function GET(request: NextRequest, context: { params: Promise<{ sit
 
   const db = await getSiteDb(site);
   const collectionName = await resolveCollectionName(db, collection);
+
+  const pole = request.nextUrl.searchParams.get('pole');
+  const domain = request.nextUrl.searchParams.get('domain');
+  const category = request.nextUrl.searchParams.get('category');
+  const subcategory = request.nextUrl.searchParams.get('subcategory');
+  const queryFilter: Record<string, any> = {};
+  const conditions: Record<string, any>[] = [];
+
+  if (pole && ['products', 'services'].includes(collection)) {
+    conditions.push({
+      $or: [
+        { poleId: pole },
+        { pole: pole },
+        { poleSlug: pole },
+      ],
+    });
+  }
+
+  if (domain && ['products', 'services'].includes(collection)) {
+    conditions.push({
+      $or: [
+        { domainId: domain },
+        { domain: domain },
+        { domainSlug: domain },
+      ],
+    });
+  }
+
+  if (category && collection === 'boutique') {
+    conditions.push({ category });
+  }
+
+  if (subcategory && collection === 'boutique') {
+    conditions.push({ subcategory });
+  }
+
+  if (conditions.length > 0) {
+    queryFilter.$and = conditions;
+  }
+
   const items = await db
     .collection(collectionName)
-    .find({}, { sort: { _id: 1 } })
+    .find(queryFilter, { sort: { _id: 1 } })
     .limit(200)
     .toArray();
 
