@@ -17,9 +17,10 @@ export default function SiteCollectionEditPage() {
   const params = useParams();
   const rawPage = params?.page;
   const pageKey = Array.isArray(rawPage) ? rawPage[0] : rawPage ?? '';
+  const normalizedPageKey = String(pageKey).trim().toLowerCase();
   const siteName = Array.isArray(params?.site) ? params.site[0] : params?.site ?? '';
   const itemId = Array.isArray(params?.id) ? params.id[0] : params?.id ?? '';
-  const collectionName = pageToCollectionMap[pageKey];
+  const collectionName = pageToCollectionMap[normalizedPageKey];
   const router = useRouter();
 
   if (!collectionName || !itemId) {

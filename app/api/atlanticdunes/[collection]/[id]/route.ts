@@ -69,8 +69,25 @@ export async function PUT(request: NextRequest, context: { params: Promise<{ col
     return badRequest('Request body must be a JSON object.');
   }
 
+  const existing = await getAtlanticDunesDocument(collection, params.id);
+  if (!existing) {
+    return new NextResponse(JSON.stringify({ message: 'Document not found' }), {
+      status: 404,
+      headers: { 'Content-Type': 'application/json' },
+    });
+  }
+
   const id = resolveDocumentId(collection, body) || params.id;
-  const payload = { ...body, _id: id };
+  const payload = {
+    ...body,
+    _id: id,
+    createdAt: existing.createdAt ?? body.createdAt ?? new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+  } as Record<string, any>;
+  if (collection === 'poles') {
+    delete payload.icon;
+    delete payload.color;
+  }
 
   try {
     const document = await updateAtlanticDunesDocument(collection, params.id, payload as any);

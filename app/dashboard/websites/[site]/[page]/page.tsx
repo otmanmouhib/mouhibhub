@@ -119,12 +119,13 @@ export default function SiteManagementPage() {
   const router = useRouter();
   const rawPage = params?.page;
   const pageKey = Array.isArray(rawPage) ? rawPage.join('/') : rawPage ?? '';
+  const normalizedPageKey = String(pageKey).trim().toLowerCase();
   const siteName = Array.isArray(params?.site) ? params.site[0] : params?.site ?? '';
   const supportedSites = useMemo(() => ['atlanticdunes', 'adrobiofarm'] as const, []);
   const supportedSite = useMemo(() => supportedSites.includes(siteName as typeof supportedSites[number]), [siteName, supportedSites]);
   const apiPrefix = useMemo(() => (siteName ? `/api/${siteName}` : '/api/atlanticdunes'), [siteName]);
-  const metadata = useMemo(() => pageMetadata[pageKey], [pageKey]);
-  const collection = useMemo(() => collectionMap[pageKey], [pageKey]);
+  const metadata = useMemo(() => pageMetadata[normalizedPageKey] ?? pageMetadata[pageKey], [normalizedPageKey, pageKey]);
+  const collection = useMemo(() => collectionMap[normalizedPageKey] ?? collectionMap[pageKey], [normalizedPageKey, pageKey]);
   const searchParams = useSearchParams();
   const selectedPole = searchParams.get('pole') ?? undefined;
   const selectedDomain = searchParams.get('domain') ?? undefined;
@@ -548,7 +549,6 @@ export default function SiteManagementPage() {
         />
       ) : (collection === 'boutiqueCategories' ? (
         <div className="flex h-64 flex-col items-center justify-center gap-3 bg-gradient-to-br from-slate-900 to-brand-500 text-white">
-          <div className="text-6xl">{item.icon ?? '🛍️'}</div>
           <div className="text-center px-6">
             <p className="text-sm uppercase tracking-[0.24em] text-slate-200">Boutique category</p>
             <p className="mt-2 text-2xl font-semibold">{item.label ?? item.slug}</p>
@@ -578,12 +578,6 @@ export default function SiteManagementPage() {
           </div>
         </div>
 
-        {item.icon ? (
-          <div className="inline-flex items-center gap-2 rounded-full bg-slate-100 px-3 py-1 text-sm font-semibold text-slate-700">
-            <span>{item.icon}</span>
-            <span>Category icon</span>
-          </div>
-        ) : null}
 
         {item.shortDescription ? <p className="text-sm text-slate-600">{item.shortDescription}</p> : null}
         {item.description ? <div className="rounded-3xl bg-slate-50 p-4 text-sm text-slate-700">{item.description}</div> : null}

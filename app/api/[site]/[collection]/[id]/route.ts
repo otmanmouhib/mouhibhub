@@ -70,10 +70,24 @@ export async function PUT(request: NextRequest, context: { params: Promise<{ sit
     return badRequest('Request body must be a JSON object.');
   }
 
-  const payload = { ...body, _id: resolveDocumentId(collection, body) ?? id };
-
   const db = await getSiteDb(site);
-  const result = await db.collection(collection).replaceOne(buildDocumentQuery(id), payload, { upsert: false });
+  const query = buildDocumentQuery(id);
+  const existing = await db.collection(collection).findOne(query);
+  if (!existing) {
+    return notFound('Document not found');
+  }
+
+  const payload = {
+    ...body,
+    _id: existing._id,
+    createdAt: existing.createdAt ?? body.createdAt ?? new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+  } as Record<string, any>;
+  if (collection === 'poles') {
+    delete payload.icon;
+    delete payload.color;
+  }
+  const result = await db.collection(collection).replaceOne(query, payload, { upsert: false });
   if (result.matchedCount === 0) {
     return notFound('Document not found');
   }

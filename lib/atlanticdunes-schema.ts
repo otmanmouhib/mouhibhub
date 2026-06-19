@@ -53,10 +53,10 @@ export const collectionSchemas: Record<string, AtlanticDunesCollectionSchema> = 
         type: 'objectArray',
         itemLabel: 'Domain',
         itemFields: [
-          { name: 'label', label: 'Label', type: 'text' },
-          { name: 'description', label: 'Description', type: 'textarea' },
+          { name: 'label', label: 'Label', type: 'text', required: true, description: 'Display name shown on the website.' },
+          { name: 'description', label: 'Description', type: 'textarea', description: 'Optional description for this domain.' },
         ],
-        description: 'Nested domain items for this pole.',
+        description: 'List of domains nested under this pole. Slugs are generated automatically from the label.',
       },
     ],
   },
@@ -75,9 +75,9 @@ export const collectionSchemas: Record<string, AtlanticDunesCollectionSchema> = 
     collection: 'newsCategories',
     label: 'News categories',
     description: 'Categories used by news articles.',
-    idField: 'id',
+    idField: '_id',
     fields: [
-      { name: 'id', label: 'Category ID', type: 'text', required: true, description: 'Unique category identifier.' },
+      { name: 'slug', label: 'Category ID', type: 'slug', required: true, description: 'Unique category identifier generated from label.' },
       { name: 'label', label: 'Label', type: 'text', required: true, description: 'Category display name.' },
       { name: 'description', label: 'Description', type: 'textarea', required: true, description: 'What this news category is for.' },
       {
@@ -86,11 +86,9 @@ export const collectionSchemas: Record<string, AtlanticDunesCollectionSchema> = 
         type: 'objectArray',
         itemLabel: 'Subcategory',
         itemFields: [
-          { name: 'slug', label: 'Slug', type: 'slug', required: true, description: 'Unique identifier for the subcategory.' },
           { name: 'label', label: 'Label', type: 'text', required: true, description: 'Display name for the subcategory.' },
-          { name: 'description', label: 'Description', type: 'textarea', description: 'Optional description for this subcategory.' },
         ],
-        description: 'Nested news subcategories grouped under this news category.',
+        description: 'Nested news subcategories grouped under this news category. Slug is generated automatically from label.',
       },
     ],
   },
@@ -176,7 +174,7 @@ export const collectionSchemas: Record<string, AtlanticDunesCollectionSchema> = 
       { name: 'title', label: 'Title', type: 'text', required: true },
       { name: 'date', label: 'Display date', type: 'date', required: true, description: 'The date shown on the article.' },
       { name: 'publishedAt', label: 'Published at', type: 'date', required: true, description: 'Publication date for the article.' },
-      { name: 'categoryId', label: 'Category', type: 'select', required: true, relation: { collection: 'newsCategories', labelField: 'label', valueField: 'id' } },
+      { name: 'categoryId', label: 'Category', type: 'select', required: true, relation: { collection: 'newsCategories', labelField: 'label', valueField: 'slug' } },
       { name: 'subcategory', label: 'Subcategory', type: 'select', description: 'Select the news subcategory for the chosen category.' },
       { name: 'summary', label: 'Summary', type: 'textarea', required: true },
       { name: 'excerpt', label: 'Excerpt', type: 'textarea', description: 'Short preview text for listings.' },
@@ -215,18 +213,16 @@ const adrobiofarmCollectionSchemas: Record<string, AtlanticDunesCollectionSchema
       { name: 'slug', label: 'Slug', type: 'slug', required: true, description: 'Unique identifier used in URLs.' },
       { name: 'label', label: 'Label', type: 'text', required: true, description: 'Display name for the pole.' },
       { name: 'shortDescription', label: 'Short description', type: 'textarea', required: true, description: 'A brief summary of the pole.' },
-      { name: 'icon', label: 'Icon', type: 'text', description: 'Emoji or icon used to represent the pole.' },
-      { name: 'color', label: 'Color', type: 'text', description: 'Hex color associated with the pole.' },
       {
         name: 'domains',
         label: 'Domains',
         type: 'objectArray',
         itemLabel: 'Domain',
         itemFields: [
-          { name: 'label', label: 'Label', type: 'text' },
-          { name: 'description', label: 'Description', type: 'textarea' },
+          { name: 'label', label: 'Label', type: 'text', required: true, description: 'Display name shown on the website.' },
+          { name: 'description', label: 'Description', type: 'textarea', description: 'Optional description for this domain.' },
         ],
-        description: 'List of domains nested under this pole.',
+        description: 'List of domains nested under this pole. Slugs are generated automatically from the label.',
       },
     ],
   },
@@ -313,7 +309,6 @@ const adrobiofarmCollectionSchemas: Record<string, AtlanticDunesCollectionSchema
     fields: [
       { name: 'slug', label: 'Slug', type: 'slug', required: true, description: 'Unique boutique category identifier.' },
       { name: 'label', label: 'Label', type: 'text', required: true, description: 'Boutique category display name.' },
-      { name: 'icon', label: 'Icon', type: 'text', description: 'Emoji or symbol used for the category.' },
       { name: 'description', label: 'Description', type: 'textarea', required: true, description: 'Description of this boutique category.' },
       {
         name: 'subcategories',
@@ -321,19 +316,27 @@ const adrobiofarmCollectionSchemas: Record<string, AtlanticDunesCollectionSchema
         type: 'objectArray',
         itemLabel: 'Subcategory',
         itemFields: [
-          { name: 'slug', label: 'Slug', type: 'slug', required: true, description: 'Unique identifier for the subcategory.' },
           { name: 'label', label: 'Label', type: 'text', required: true, description: 'Display name for the subcategory.' },
-          { name: 'description', label: 'Description', type: 'textarea', description: 'Optional description for this subcategory.' },
         ],
-        description: 'Nested boutique subcategories grouped under this category.',
+        description: 'Nested boutique subcategories grouped under this category. Slug is generated automatically from label.',
       },
     ],
   },
 };
 
 export function getCollectionSchema(collectionName: string, siteName = 'atlanticdunes'): AtlanticDunesCollectionSchema | undefined {
-  if (siteName === 'adrobiofarm') {
-    return adrobiofarmCollectionSchemas[collectionName] || collectionSchemas[collectionName];
+  const normalizedCollection = String(collectionName ?? '').trim();
+  const normalizedSite = String(siteName ?? 'atlanticdunes').trim().toLowerCase();
+  if (!normalizedCollection) return undefined;
+
+  const collectionKey = Object.keys({
+    ...collectionSchemas,
+    ...adrobiofarmCollectionSchemas,
+  }).find((key) => key.toLowerCase() === normalizedCollection.toLowerCase());
+  if (!collectionKey) return undefined;
+
+  if (normalizedSite === 'adrobiofarm') {
+    return adrobiofarmCollectionSchemas[collectionKey] || collectionSchemas[collectionKey];
   }
-  return collectionSchemas[collectionName];
+  return collectionSchemas[collectionKey] || adrobiofarmCollectionSchemas[collectionKey];
 }

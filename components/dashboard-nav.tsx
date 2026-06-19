@@ -16,6 +16,7 @@ type RelatedItem = {
   label?: string;
   id?: string;
   subcategories?: Array<{ slug?: string; label?: string }>;
+  domains?: Array<{ slug?: string; label?: string; id?: string; _id?: string; description?: string }>;
 };
 
 type PoleMeta = {
@@ -36,23 +37,39 @@ type SiteMeta = {
   newsCategories?: CategoryMeta[];
 };
 
+type PageItem = {
+  key: string;
+  label: string;
+  href: string;
+  children?: PageItem[];
+};
+
 const items = [
   { href: '/dashboard', label: 'Overview' },
   { href: '/dashboard/contacts', label: 'Contacts' },
   { href: '/dashboard/users', label: 'Users' },
 ];
 
-function buildSitePages(siteName: string, availableCollections: string[]) {
+function buildSitePages(siteName: string, availableCollections: string[]): PageItem[] {
+  const categoryChildren: PageItem[] = [
+    { key: 'manage-boutique-categories', label: 'Manage boutique categories', href: `/dashboard/websites/${siteName}/manage-boutique-categories` },
+    { key: 'manage-poles-domains', label: 'Manage poles and domains', href: `/dashboard/websites/${siteName}/manage-poles-domains` },
+    { key: 'manage-news-categories', label: 'Manage news categories', href: `/dashboard/websites/${siteName}/manage-news-categories` },
+    { key: 'manage-gallery', label: 'Manage gallery', href: `/dashboard/websites/${siteName}/manage-gallery` },
+  ];
+
   return [
     { key: 'overview', label: 'Overview', href: `/dashboard/websites/${siteName}` },
     { key: 'manage-services', label: 'Manage services', href: `/dashboard/websites/${siteName}/manage-services` },
     { key: 'manage-products', label: 'Manage products', href: `/dashboard/websites/${siteName}/manage-products` },
     { key: 'manage-boutique', label: 'Manage boutique', href: `/dashboard/websites/${siteName}/manage-boutique` },
     { key: 'manage-news', label: 'Manage news', href: `/dashboard/websites/${siteName}/manage-news` },
-    { key: 'manage-boutique-categories', label: 'Manage boutique categories', href: `/dashboard/websites/${siteName}/manage-boutique-categories` },
-    { key: 'manage-poles-domains', label: 'Manage poles and domains', href: `/dashboard/websites/${siteName}/manage-poles-domains` },
-    { key: 'manage-news-categories', label: 'Manage news categories', href: `/dashboard/websites/${siteName}/manage-news-categories` },
-    { key: 'manage-gallery', label: 'Manage gallery', href: `/dashboard/websites/${siteName}/manage-gallery` },
+    {
+      key: 'manage-categories-gallery',
+      label: 'Manage categories and gallery',
+      href: categoryChildren[0].href,
+      children: categoryChildren,
+    },
     { key: 'manage-entreprise-informations', label: 'Manage entreprise informations', href: `/dashboard/websites/${siteName}/manage-entreprise-informations` },
     { key: 'manage-contact-submissions', label: 'Manage contact submissions', href: `/dashboard/websites/${siteName}/manage-contact-submissions` },
     { key: 'manage-report-tickets', label: 'Manage report tickets', href: `/dashboard/websites/${siteName}/manage-report-tickets` },
@@ -106,7 +123,13 @@ export default function DashboardNav() {
               if (response.ok) {
                 const data = await response.json();
                 if (Array.isArray(data.items)) {
-                  poleItems.push(...data.items.map((item: any) => ({ _id: String(item._id), slug: item.slug, label: item.label, id: item.id })));
+                  poleItems.push(...data.items.map((item: any) => ({
+                    _id: String(item._id),
+                    slug: item.slug,
+                    label: item.label,
+                    id: item.id,
+                    domains: Array.isArray(item.domains) ? item.domains : [],
+                  })));
                 }
               }
             } catch {
@@ -118,6 +141,18 @@ export default function DashboardNav() {
               const label = pole.label ?? value;
               poleLookup.set(value, label);
               poleGroups.set(value, { label, domainMap: new Map() });
+            });
+
+            poleItems.forEach((pole) => {
+              const poleValue = String(pole.slug ?? pole.id ?? pole._id);
+              const group = poleGroups.get(poleValue);
+              if (!group || !Array.isArray(pole.domains)) return;
+              pole.domains.forEach((domain) => {
+                const domainValue = String(domain.slug ?? domain.id ?? domain._id ?? domain.label ?? '').trim();
+                if (!domainValue) return;
+                const domainLabel = String(domain.label ?? domain.slug ?? domain.id ?? domainValue);
+                group.domainMap.set(domainValue, domainLabel);
+              });
             });
 
             const domainLookup = new Map<string, string>();
@@ -236,11 +271,41 @@ export default function DashboardNav() {
 
   useEffect(() => {
     if (!pathname.startsWith('/dashboard/websites/')) return;
-    const [, , siteName] = pathname.split('/');
+    const [, , , siteName, currentPage] = pathname.split('/');
     if (siteName) {
       setExpandedSites((current) => ({ ...current, [siteName]: true }));
     }
-  }, [pathname]);
+
+    const parentPageMap: Record<string, string> = {
+      'manage-boutique-categories': 'manage-categories-gallery',
+      'manage-poles-domains': 'manage-categories-gallery',
+      'manage-news-categories': 'manage-categories-gallery',
+      'manage-gallery': 'manage-categories-gallery',
+    };
+    const parentMenuPage = currentPage ? parentPageMap[currentPage] : undefined;
+
+    if (siteName && parentMenuPage) {
+      setExpandedPageSubmenus((current) => ({
+        ...current,
+        [`${siteName}:${parentMenuPage}`]: true,
+      }));
+    }
+
+    if (siteName && currentPage && ['manage-products', 'manage-services', 'manage-boutique', 'manage-news'].includes(currentPage)) {
+      const shouldOpen = Boolean(
+        searchParams.get('pole') ||
+        searchParams.get('domain') ||
+        searchParams.get('category') ||
+        searchParams.get('subcategory'),
+      );
+      if (shouldOpen) {
+        setExpandedPageSubmenus((current) => ({
+          ...current,
+          [`${siteName}:${currentPage}`]: true,
+        }));
+      }
+    }
+  }, [pathname, searchParams]);
 
   const websiteGroups = useMemo(
     () =>
@@ -331,25 +396,44 @@ export default function DashboardNav() {
                     {expanded && (
                       <div className="ml-3 mt-0.5 space-y-0.5 border-l border-brand-200 pl-2.5">
                         {site.pages.map((page) => {
-                          const active = pathname === page.href;
-                          const hasDropdown = (
-                            ((page.key === 'manage-products' || page.key === 'manage-services') && (siteMeta[site.db]?.poles?.length ?? 0) > 0)
+                          const active = page.children ? page.children.some((child) => pathname === child.href) : pathname === page.href;
+                          const hasDropdown = page.children?.length
+                            || (((page.key === 'manage-products' || page.key === 'manage-services') && (siteMeta[site.db]?.poles?.length ?? 0) > 0)
                             || (page.key === 'manage-boutique' && (siteMeta[site.db]?.boutiqueCategories?.length ?? 0) > 0)
-                            || (page.key === 'manage-news' && (siteMeta[site.db]?.newsCategories?.length ?? 0) > 0)
-                          );
+                            || (page.key === 'manage-news' && (siteMeta[site.db]?.newsCategories?.length ?? 0) > 0));
                           return (
                             <div key={page.key}>
                               <div className="flex items-center justify-between gap-2">
-                                <Link
-                                  href={page.href}
-                                  className={`flex-1 rounded-lg px-3 py-1.5 text-[11px] font-medium leading-5 transition-all duration-150 ${
-                                    active
-                                      ? 'bg-brand-50 text-brand-700'
-                                      : 'text-brand-700 hover:bg-brand-50/60 hover:text-brand-900'
-                                  }`}
-                                >
-                                  {page.label}
-                                </Link>
+                                {page.children ? (
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      const submenuKey = `${site.db}:${page.key}`;
+                                      setExpandedPageSubmenus((current) => ({
+                                        ...current,
+                                        [submenuKey]: !current[submenuKey],
+                                      }));
+                                    }}
+                                    className={`flex-1 rounded-lg px-3 py-1.5 text-[11px] font-medium leading-5 text-left transition-all duration-150 ${
+                                      active
+                                        ? 'bg-brand-50 text-brand-700'
+                                        : 'text-brand-700 hover:bg-brand-50/60 hover:text-brand-900'
+                                    }`}
+                                  >
+                                    {page.label}
+                                  </button>
+                                ) : (
+                                  <Link
+                                    href={page.href}
+                                    className={`flex-1 rounded-lg px-3 py-1.5 text-[11px] font-medium leading-5 transition-all duration-150 ${
+                                      active
+                                        ? 'bg-brand-50 text-brand-700'
+                                        : 'text-brand-700 hover:bg-brand-50/60 hover:text-brand-900'
+                                    }`}
+                                  >
+                                    {page.label}
+                                  </Link>
+                                )}
 
                                 {hasDropdown ? (
                                   <button
@@ -381,22 +465,45 @@ export default function DashboardNav() {
                                 ) : null}
                               </div>
 
-                              {(page.key === 'manage-products' || page.key === 'manage-services') && siteMeta[site.db] ? (
+                              {page.children ? (
+                                <div className="ml-6 mt-1 space-y-0.5">
+                                  {expandedPageSubmenus[`${site.db}:${page.key}`] ? (
+                                    page.children.map((child) => {
+                                      const childActive = pathname === child.href;
+                                      return (
+                                        <Link
+                                          key={child.key}
+                                          href={child.href}
+                                          className={`block rounded-lg px-3 py-1.5 text-xs font-medium transition-all duration-150 ${
+                                            childActive
+                                              ? 'bg-brand-50 text-brand-700'
+                                              : 'text-slate-700 hover:bg-slate-100/70 hover:text-slate-900'
+                                          }`}
+                                        >
+                                          {child.label}
+                                        </Link>
+                                      );
+                                    })
+                                  ) : null}
+                                </div>
+                              ) : null}
+
+                              {(page.key === 'manage-products' || page.key === 'manage-services') && siteMeta[site.db]?.poles?.length ? (
                                 <div className="ml-10 mt-1 space-y-0.5">
                                   {expandedPageSubmenus[`${site.db}:${page.key}`] ? (
                                     <div className="space-y-0.5">
-                                      {siteMeta[site.db].poles.length > 0 ? (
+                                      {siteMeta[site.db]?.poles?.length ? (
                                         siteMeta[site.db].poles.map((pole) => {
+                                          const poleKey = `${site.db}:${page.key}:pole:${pole.value}`;
                                           const poleHref = `${page.href}?pole=${encodeURIComponent(pole.value)}`;
-                                          const poleKey = `${site.db}:${page.key}:${pole.value}`;
-                                          const poleOpen = expandedPoleSubmenus[poleKey];
-                                          const poleActive = pathname === page.href && searchParams.get('pole') === pole.value && !searchParams.get('domain');
+                                          const poleActive = pathname === page.href && searchParams.get('pole') === pole.value;
+                                          const poleOpen = expandedCategorySubmenus[poleKey];
                                           return (
                                             <div key={`pole-${pole.value}`} className="space-y-0.5">
                                               <div className="flex items-center justify-between gap-2">
                                                 <Link
                                                   href={poleHref}
-                                                  className={`block rounded-lg px-3 py-1.5 text-xs font-medium transition-all duration-150 ${
+                                                  className={`flex-1 rounded-lg px-3 py-1.5 text-xs font-medium transition-all duration-150 ${
                                                     poleActive
                                                       ? 'bg-brand-50 text-brand-700'
                                                       : 'text-slate-700 hover:bg-slate-100/70 hover:text-slate-900'
@@ -408,17 +515,19 @@ export default function DashboardNav() {
                                                   <button
                                                     type="button"
                                                     onClick={() =>
-                                                      setExpandedPoleSubmenus((current) => ({
+                                                      setExpandedCategorySubmenus((current) => ({
                                                         ...current,
                                                         [poleKey]: !current[poleKey],
                                                       }))
                                                     }
                                                     className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-500 transition hover:border-slate-300 hover:text-slate-700"
-                                                    aria-expanded={poleOpen}
+                                                    aria-expanded={poleOpen ? 'true' : 'false'}
                                                   >
                                                     <svg
                                                       viewBox="0 0 24 24"
-                                                      className={`h-4 w-4 transition-transform duration-200 ${poleOpen ? 'rotate-180' : 'rotate-0'}`}
+                                                      className={`h-4 w-4 transition-transform duration-200 ${
+                                                        poleOpen ? 'rotate-180' : 'rotate-0'
+                                                      }`}
                                                       fill="none"
                                                       stroke="currentColor"
                                                       strokeWidth="2.5"
@@ -455,14 +564,14 @@ export default function DashboardNav() {
                                           );
                                         })
                                       ) : (
-                                        <div className="rounded-lg bg-slate-50 px-3 py-2 text-xs text-slate-500">No poles available</div>
+                                        <div className="rounded-lg bg-white px-3 py-2 text-xs text-slate-500">No poles or domains available</div>
                                       )}
                                     </div>
                                   ) : null}
                                 </div>
                               ) : null}
 
-                              {page.key === 'manage-boutique' && siteMeta[site.db]?.boutiqueCategories ? (
+                              {page.key === 'manage-boutique' && siteMeta[site.db]?.boutiqueCategories?.length ? (
                                 <div className="ml-10 mt-1 space-y-0.5">
                                   {expandedPageSubmenus[`${site.db}:${page.key}`] ? (
                                     <div className="space-y-0.5">

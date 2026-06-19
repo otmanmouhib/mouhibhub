@@ -6,7 +6,15 @@ import { useParams, useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import { fetchWithAuthRedirect } from 'lib/fetch-client';
 
-type PoleItem = { _id: string; slug?: string; label?: string; shortDescription?: string; domains?: Array<{ slug?: string; label?: string; description?: string }> };
+type PoleItem = {
+  _id: string;
+  slug?: string;
+  label?: string;
+  shortDescription?: string;
+  domains?: Array<{ slug?: string; label?: string; description?: string }>;
+  createdAt?: string;
+  updatedAt?: string;
+};
 
 type SiteApiResponse = {
   items: Array<PoleItem>;

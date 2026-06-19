@@ -40,7 +40,7 @@ export const collectionMetadata: Record<AtlanticDunesCollectionName, { label: st
   newsCategories: {
     label: 'News categories',
     description: 'Category records for news articles.',
-    idField: 'id',
+    idField: '_id',
   },
   boutiqueCategories: {
     label: 'Boutique categories',
@@ -158,7 +158,7 @@ export function getDocumentationHint(collection: AtlanticDunesCollectionName) {
   return {
     poles: 'Requires slug, label, shortDescription.',
     domains: 'Requires slug, label, description.',
-    newsCategories: 'Requires id, label, description.',
+    newsCategories: 'Requires slug, label, description.',
     services: 'Requires slug, title, shortDescription, description, methodology, deliverable, poleId, domainId.',
     products: 'Requires slug, title, shortDescription, description, specs, performance, poleId, domainId, pdfLink.',
     boutique: 'Requires slug, title, shortDescription, description, details, specs, price, availability, inStock, poleId, domainId.',

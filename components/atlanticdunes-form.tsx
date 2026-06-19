@@ -559,7 +559,6 @@ export default function AtlanticDunesForm({ collectionName, mode, itemId, siteNa
         payload.description = description;
       }
       if (field.relation.collection === 'newsCategories') {
-        payload.id = slug;
         payload.description = description;
       }
 

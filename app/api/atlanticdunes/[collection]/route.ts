@@ -63,11 +63,15 @@ export async function POST(request: NextRequest, context: { params: Promise<{ co
   }
 
   const id = resolveDocumentId(collection, body);
-  if (!id) {
-    return badRequest(`Missing required id field. Add a ${collectionMetadata[collection].idField} or _id property.`);
+  const now = new Date().toISOString();
+  const payload = { ...body, createdAt: now, updatedAt: now } as Record<string, any>;
+  if (id) {
+    payload._id = id;
   }
-
-  const payload = { ...body, _id: id };
+  if (collection === 'poles') {
+    delete payload.icon;
+    delete payload.color;
+  }
 
   try {
     const document = await createAtlanticDunesDocument(collection, payload as any);

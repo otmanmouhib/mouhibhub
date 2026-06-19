@@ -17,8 +17,9 @@ export default function SiteCollectionCreatePage() {
   const params = useParams();
   const rawPage = params?.page;
   const pageKey = Array.isArray(rawPage) ? rawPage[0] : rawPage ?? '';
+  const normalizedPageKey = String(pageKey).trim().toLowerCase();
   const siteName = Array.isArray(params?.site) ? params.site[0] : params?.site ?? '';
-  const collectionName = pageToCollectionMap[pageKey];
+  const collectionName = pageToCollectionMap[normalizedPageKey];
 
   if (!collectionName) {
     return <div className="p-6 text-slate-700">Unsupported management page.</div>;
