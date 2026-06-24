@@ -12,6 +12,8 @@ type PoleItem = {
   label?: string;
   shortDescription?: string;
   domains?: Array<{ slug?: string; label?: string; description?: string }>;
+  productDomains?: Array<{ slug?: string; label?: string; description?: string }>;
+  serviceDomains?: Array<{ slug?: string; label?: string; description?: string }>;
   createdAt?: string;
   updatedAt?: string;
 };
@@ -105,7 +107,7 @@ export default function ManagePolesAndDomainsPage() {
         <div className="flex items-center justify-between gap-4">
           <div>
             <h2 className="text-xl font-semibold text-slate-900">Poles</h2>
-            <p className="mt-1 text-sm text-slate-500">Each pole can include a nested list of domains as its subcategories.</p>
+            <p className="mt-1 text-sm text-slate-500">Each pole can include separate product and service domain lists, or legacy nested domains.</p>
           </div>
           <div className="rounded-full bg-slate-100 px-4 py-2 text-sm font-medium text-slate-700">
             {poles.length} {poles.length === 1 ? 'pole' : 'poles'}
@@ -130,27 +132,69 @@ export default function ManagePolesAndDomainsPage() {
                   </div>
 
                   <div className="rounded-3xl border border-slate-200 bg-white p-4">
-                    <div className="flex items-center justify-between gap-4">
+                    <div className="grid gap-4 sm:grid-cols-2">
                       <div>
-                        <p className="text-xs uppercase tracking-[0.24em] text-slate-500">Domains</p>
-                        <p className="mt-1 text-sm font-semibold text-slate-900">{Array.isArray(pole.domains) ? pole.domains.length : 0}</p>
+                        <p className="text-xs uppercase tracking-[0.24em] text-slate-500">Product domains</p>
+                        <p className="mt-1 text-sm font-semibold text-slate-900">{Array.isArray(pole.productDomains) ? pole.productDomains.length : Array.isArray(pole.domains) ? pole.domains.length : 0}</p>
                       </div>
-                      <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold uppercase tracking-[0.24em] text-slate-700">
-                        Subcategories
-                      </span>
+                      <div>
+                        <p className="text-xs uppercase tracking-[0.24em] text-slate-500">Service domains</p>
+                        <p className="mt-1 text-sm font-semibold text-slate-900">{Array.isArray(pole.serviceDomains) ? pole.serviceDomains.length : Array.isArray(pole.domains) ? pole.domains.length : 0}</p>
+                      </div>
                     </div>
 
-                    {Array.isArray(pole.domains) && pole.domains.length > 0 ? (
-                      <div className="mt-4 space-y-3">
-                        {pole.domains.map((domain, index) => (
-                          <div key={`${pole._id}-domain-${index}`} className="rounded-2xl border border-slate-200 bg-slate-50 p-3">
-                            <div className="flex items-center justify-between gap-3">
-                              <p className="font-semibold text-slate-900">{domain.label ?? domain.slug ?? `Domain ${index + 1}`}</p>
-                              <span className="text-xs text-slate-500">{domain.slug ?? 'unnamed'}</span>
+                    {((Array.isArray(pole.productDomains) && pole.productDomains.length > 0) || (Array.isArray(pole.serviceDomains) && pole.serviceDomains.length > 0) || (Array.isArray(pole.domains) && pole.domains.length > 0)) ? (
+                      <div className="mt-4 space-y-4">
+                        {Array.isArray(pole.productDomains) && pole.productDomains.length > 0 ? (
+                          <div>
+                            <p className="mb-3 text-xs uppercase tracking-[0.24em] text-slate-500">Product domains</p>
+                            <div className="space-y-3">
+                              {pole.productDomains.map((domain, index) => (
+                                <div key={`${pole._id}-product-domain-${index}`} className="rounded-2xl border border-slate-200 bg-slate-50 p-3">
+                                  <div className="flex items-center justify-between gap-3">
+                                    <p className="font-semibold text-slate-900">{domain.label ?? domain.slug ?? `Domain ${index + 1}`}</p>
+                                    <span className="text-xs text-slate-500">{domain.slug ?? 'unnamed'}</span>
+                                  </div>
+                                  {domain.description ? <p className="mt-2 text-sm text-slate-600">{domain.description}</p> : null}
+                                </div>
+                              ))}
                             </div>
-                            {domain.description ? <p className="mt-2 text-sm text-slate-600">{domain.description}</p> : null}
                           </div>
-                        ))}
+                        ) : null}
+
+                        {Array.isArray(pole.serviceDomains) && pole.serviceDomains.length > 0 ? (
+                          <div>
+                            <p className="mb-3 text-xs uppercase tracking-[0.24em] text-slate-500">Service domains</p>
+                            <div className="space-y-3">
+                              {pole.serviceDomains.map((domain, index) => (
+                                <div key={`${pole._id}-service-domain-${index}`} className="rounded-2xl border border-slate-200 bg-slate-50 p-3">
+                                  <div className="flex items-center justify-between gap-3">
+                                    <p className="font-semibold text-slate-900">{domain.label ?? domain.slug ?? `Domain ${index + 1}`}</p>
+                                    <span className="text-xs text-slate-500">{domain.slug ?? 'unnamed'}</span>
+                                  </div>
+                                  {domain.description ? <p className="mt-2 text-sm text-slate-600">{domain.description}</p> : null}
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        ) : null}
+
+                        {Array.isArray(pole.domains) && pole.domains.length > 0 ? (
+                          <div>
+                            <p className="mb-3 text-xs uppercase tracking-[0.24em] text-slate-500">Legacy domains</p>
+                            <div className="space-y-3">
+                              {pole.domains.map((domain, index) => (
+                                <div key={`${pole._id}-domain-${index}`} className="rounded-2xl border border-slate-200 bg-slate-50 p-3">
+                                  <div className="flex items-center justify-between gap-3">
+                                    <p className="font-semibold text-slate-900">{domain.label ?? domain.slug ?? `Domain ${index + 1}`}</p>
+                                    <span className="text-xs text-slate-500">{domain.slug ?? 'unnamed'}</span>
+                                  </div>
+                                  {domain.description ? <p className="mt-2 text-sm text-slate-600">{domain.description}</p> : null}
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        ) : null}
                       </div>
                     ) : (
                       <p className="mt-4 text-sm text-slate-500">No domains defined yet. Edit the pole to add nested domains.</p>

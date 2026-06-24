@@ -17,12 +17,15 @@ type RelatedItem = {
   id?: string;
   subcategories?: Array<{ slug?: string; label?: string }>;
   domains?: Array<{ slug?: string; label?: string; id?: string; _id?: string; description?: string }>;
+  productDomains?: Array<{ slug?: string; label?: string; id?: string; _id?: string; description?: string }>;
+  serviceDomains?: Array<{ slug?: string; label?: string; id?: string; _id?: string; description?: string }>;
 };
 
 type PoleMeta = {
   value: string;
   label: string;
-  domains: Array<{ value: string; label: string }>;
+  productDomains: Array<{ value: string; label: string }>;
+  serviceDomains: Array<{ value: string; label: string }>;
 };
 
 type CategoryMeta = {
@@ -115,7 +118,7 @@ export default function DashboardNav() {
           const shouldLoadPoles = site.availableCollections.includes('poles') || site.availableCollections.includes('domains');
           const poleItems: RelatedItem[] = [];
           const poleLookup = new Map<string, string>();
-          const poleGroups = new Map<string, { label: string; domainMap: Map<string, string> }>();
+          const poleGroups = new Map<string, { label: string; productDomainMap: Map<string, string>; serviceDomainMap: Map<string, string> }>();
 
           if (shouldLoadPoles) {
             try {
@@ -129,6 +132,8 @@ export default function DashboardNav() {
                     label: item.label,
                     id: item.id,
                     domains: Array.isArray(item.domains) ? item.domains : [],
+                    productDomains: Array.isArray(item.productDomains) ? item.productDomains : Array.isArray(item.domains) ? item.domains : [],
+                    serviceDomains: Array.isArray(item.serviceDomains) ? item.serviceDomains : Array.isArray(item.domains) ? item.domains : [],
                   })));
                 }
               }
@@ -140,18 +145,37 @@ export default function DashboardNav() {
               const value = String(pole.slug ?? pole.id ?? pole._id);
               const label = pole.label ?? value;
               poleLookup.set(value, label);
-              poleGroups.set(value, { label, domainMap: new Map() });
+              poleGroups.set(value, { label, productDomainMap: new Map(), serviceDomainMap: new Map() });
             });
 
             poleItems.forEach((pole) => {
               const poleValue = String(pole.slug ?? pole.id ?? pole._id);
               const group = poleGroups.get(poleValue);
-              if (!group || !Array.isArray(pole.domains)) return;
-              pole.domains.forEach((domain) => {
+              if (!group) return;
+
+              const productDomains = Array.isArray(pole.productDomains)
+                ? pole.productDomains
+                : Array.isArray(pole.domains)
+                  ? pole.domains
+                  : [];
+              const serviceDomains = Array.isArray(pole.serviceDomains)
+                ? pole.serviceDomains
+                : Array.isArray(pole.domains)
+                  ? pole.domains
+                  : [];
+
+              productDomains.forEach((domain) => {
                 const domainValue = String(domain.slug ?? domain.id ?? domain._id ?? domain.label ?? '').trim();
                 if (!domainValue) return;
                 const domainLabel = String(domain.label ?? domain.slug ?? domain.id ?? domainValue);
-                group.domainMap.set(domainValue, domainLabel);
+                group.productDomainMap.set(domainValue, domainLabel);
+              });
+
+              serviceDomains.forEach((domain) => {
+                const domainValue = String(domain.slug ?? domain.id ?? domain._id ?? domain.label ?? '').trim();
+                if (!domainValue) return;
+                const domainLabel = String(domain.label ?? domain.slug ?? domain.id ?? domainValue);
+                group.serviceDomainMap.set(domainValue, domainLabel);
               });
             });
 
@@ -172,38 +196,50 @@ export default function DashboardNav() {
               // ignore
             }
 
-            const fallbackCollections = ['services', 'products', 'boutiqueProducts', 'boutique'];
-            await Promise.all(
-              fallbackCollections.map(async (collectionName) => {
-                if (!site.availableCollections.includes(collectionName)) return;
-                try {
-                  const response = await fetch(`/api/${site.db}/${collectionName}`);
-                  if (!response.ok) return;
-                  const data = await response.json();
-                  const items = Array.isArray(data.items) ? data.items : [];
-                  items.forEach((item: any) => {
-                    const poleValue = item.pole || item.poleId || item.poleSlug;
-                    const domainValue = item.domain || item.domainId || item.domainSlug;
-                    if (typeof poleValue !== 'string' || !poleValue.trim()) return;
-                    if (typeof domainValue !== 'string' || !domainValue.trim()) return;
+            const shouldFallback = poleGroups.size === 0 && domainLookup.size === 0;
+            if (shouldFallback) {
+              const fallbackCollections = ['services', 'products'];
+              await Promise.all(
+                fallbackCollections.map(async (collectionName) => {
+                  if (!site.availableCollections.includes(collectionName)) return;
+                  try {
+                    const response = await fetch(`/api/${site.db}/${collectionName}`);
+                    if (!response.ok) return;
+                    const data = await response.json();
+                    const items = Array.isArray(data.items) ? data.items : [];
+                    items.forEach((item: any) => {
+                      const poleValue = item.pole || item.poleId || item.poleSlug;
+                      const domainValue = item.domain || item.domainId || item.domainSlug;
+                      if (typeof poleValue !== 'string' || !poleValue.trim()) return;
+                      if (typeof domainValue !== 'string' || !domainValue.trim()) return;
 
-                    const normalizedPole = poleValue.trim();
-                    const normalizedDomain = domainValue.trim();
-                    const poleLabel = poleLookup.get(normalizedPole) ?? normalizedPole;
-                    const domainLabel = domainLookup.get(normalizedDomain) ?? normalizedDomain;
+                      const normalizedPole = poleValue.trim();
+                      const normalizedDomain = domainValue.trim();
+                      const poleLabel = poleLookup.get(normalizedPole) ?? normalizedPole;
+                      const domainLabel = domainLookup.get(normalizedDomain) ?? normalizedDomain;
 
-                    if (!poleGroups.has(normalizedPole)) {
-                      poleGroups.set(normalizedPole, { label: poleLabel, domainMap: new Map() });
-                    }
+                      if (!poleGroups.has(normalizedPole)) {
+                        poleGroups.set(normalizedPole, {
+                          label: poleLabel,
+                          productDomainMap: new Map(),
+                          serviceDomainMap: new Map(),
+                        });
+                      }
 
-                    const group = poleGroups.get(normalizedPole);
-                    group?.domainMap.set(normalizedDomain, domainLabel);
-                  });
-                } catch {
-                  // ignore fallback errors
-                }
-              }),
-            );
+                      const group = poleGroups.get(normalizedPole);
+                      if (!group) return;
+                      if (collectionName === 'products') {
+                        group.productDomainMap.set(normalizedDomain, domainLabel);
+                      } else if (collectionName === 'services') {
+                        group.serviceDomainMap.set(normalizedDomain, domainLabel);
+                      }
+                    });
+                  } catch {
+                    // ignore fallback errors
+                  }
+                }),
+              );
+            }
           }
 
           let categories: CategoryMeta[] = [];
@@ -257,7 +293,8 @@ export default function DashboardNav() {
           const poles = Array.from(poleGroups.entries()).map(([value, group]) => ({
             value,
             label: group.label,
-            domains: Array.from(group.domainMap.entries()).map(([domainValue, domainLabel]) => ({ value: domainValue, label: domainLabel })),
+            productDomains: Array.from(group.productDomainMap.entries()).map(([domainValue, domainLabel]) => ({ value: domainValue, label: domainLabel })),
+            serviceDomains: Array.from(group.serviceDomainMap.entries()).map(([domainValue, domainLabel]) => ({ value: domainValue, label: domainLabel })),
           }));
 
           meta[site.db] = { poles, boutiqueCategories: categories, newsCategories };
@@ -498,6 +535,7 @@ export default function DashboardNav() {
                                           const poleHref = `${page.href}?pole=${encodeURIComponent(pole.value)}`;
                                           const poleActive = pathname === page.href && searchParams.get('pole') === pole.value;
                                           const poleOpen = expandedCategorySubmenus[poleKey];
+                                          const domainList = page.key === 'manage-products' ? pole.productDomains : pole.serviceDomains;
                                           return (
                                             <div key={`pole-${pole.value}`} className="space-y-0.5">
                                               <div className="flex items-center justify-between gap-2">
@@ -511,7 +549,7 @@ export default function DashboardNav() {
                                                 >
                                                   {pole.label}
                                                 </Link>
-                                                {pole.domains.length > 0 ? (
+                                                {domainList.length > 0 ? (
                                                   <button
                                                     type="button"
                                                     onClick={() =>
@@ -539,9 +577,9 @@ export default function DashboardNav() {
                                                   </button>
                                                 ) : null}
                                               </div>
-                                              {poleOpen && pole.domains.length > 0 ? (
+                                              {poleOpen && domainList.length > 0 ? (
                                                 <div className="ml-3 space-y-0.5">
-                                                  {pole.domains.map((domain) => {
+                                                  {domainList.map((domain) => {
                                                     const domainHref = `${page.href}?pole=${encodeURIComponent(pole.value)}&domain=${encodeURIComponent(domain.value)}`;
                                                     const domainActive = pathname === page.href && searchParams.get('domain') === domain.value;
                                                     return (

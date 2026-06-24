@@ -83,8 +83,13 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
 
   async function countNestedDomains() {
     const db = await getSiteDb(siteDb);
-    const docs = await db.collection('poles').find({}, { projection: { domains: 1 } }).toArray();
-    return docs.reduce((sum, doc) => sum + (Array.isArray(doc.domains) ? doc.domains.length : 0), 0);
+    const docs = await db.collection('poles').find({}, { projection: { domains: 1, productDomains: 1, serviceDomains: 1 } }).toArray();
+    return docs.reduce((sum, doc) => {
+      const domainsCount = Array.isArray(doc.domains) ? doc.domains.length : 0;
+      const productDomainsCount = Array.isArray(doc.productDomains) ? doc.productDomains.length : 0;
+      const serviceDomainsCount = Array.isArray(doc.serviceDomains) ? doc.serviceDomains.length : 0;
+      return sum + domainsCount + productDomainsCount + serviceDomainsCount;
+    }, 0);
   }
 
   const polesCount = availableCollections.includes('poles')

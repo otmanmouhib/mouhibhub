@@ -47,10 +47,15 @@ export async function GET(request: NextRequest, context: { params: Promise<{ typ
 
     const poleExists = await db.listCollections({ name: 'poles' }, { nameOnly: true }).hasNext();
     if (poleExists) {
-      const poles = await db.collection('poles').find({}, { projection: { domains: 1 } }).toArray();
+      const poles = await db.collection('poles').find({}, { projection: { domains: 1, productDomains: 1, serviceDomains: 1 } }).toArray();
       poles.forEach((pole) => {
-        if (!Array.isArray(pole.domains)) return;
-        pole.domains.forEach((domain: any) => {
+        const poleDomainLists = [
+          ...(Array.isArray(pole.domains) ? pole.domains : []),
+          ...(Array.isArray(pole.productDomains) ? pole.productDomains : []),
+          ...(Array.isArray(pole.serviceDomains) ? pole.serviceDomains : []),
+        ];
+
+        poleDomainLists.forEach((domain: any) => {
           const value = String(domain.slug ?? domain.id ?? domain._id ?? domain.label ?? domain);
           const label = domain.label ?? domain.slug ?? domain.id ?? value;
           const description = domain.description ?? undefined;
@@ -71,6 +76,8 @@ export async function GET(request: NextRequest, context: { params: Promise<{ typ
   const projection: any = { _id: 1, label: 1, slug: 1, id: 1, subcategories: 1 };
   if (type === 'poles') {
     projection.domains = 1;
+    projection.productDomains = 1;
+    projection.serviceDomains = 1;
   }
 
   const items = await db

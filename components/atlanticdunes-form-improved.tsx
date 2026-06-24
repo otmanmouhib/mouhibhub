@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import { fetchWithAuthRedirect } from 'lib/fetch-client';
@@ -32,6 +32,15 @@ type FormData = Record<string, any>;
 
 const DEFAULT_IMAGE_PAGE_SIZE = 9;
 const SMALL_SCREEN_IMAGE_PAGE_SIZE = 3;
+
+const collectionToManagePage: Record<string, string> = {
+  products: 'manage-products',
+  services: 'manage-services',
+  boutique: 'manage-boutique',
+  boutiqueCategories: 'manage-boutique-categories',
+  news: 'manage-news',
+  newsCategories: 'manage-news-categories',
+};
 
 function slugify(value: string) {
   const normalized = value
@@ -124,11 +133,19 @@ function getFieldSections(fields: AtlanticDunesField[]): Array<{ name: string; l
   const contentFields = fields.filter(f => ['textarea'].includes(f.type));
   const relationsFields = fields.filter(f => ['select', 'multiSelect'].includes(f.type));
   const mediaFields = fields.filter(f => f.relation?.collection === 'images');
-  const advancedFields = fields.filter(f => !basicFields.includes(f) && !contentFields.includes(f) && !relationsFields.includes(f) && !mediaFields.includes(f));
+  const domainFields = fields.filter((f) => ['productDomains', 'serviceDomains'].includes(f.name));
+  const advancedFields = fields.filter(
+    (f) => !basicFields.includes(f)
+      && !contentFields.includes(f)
+      && !relationsFields.includes(f)
+      && !mediaFields.includes(f)
+      && !domainFields.includes(f),
+  );
 
   const sections = [];
   if (basicFields.length > 0) sections.push({ name: 'basic', label: '📋 Basic Info', fields: basicFields });
   if (contentFields.length > 0) sections.push({ name: 'content', label: '📝 Description', fields: contentFields });
+  if (domainFields.length > 0) sections.push({ name: 'domains', label: '🗂️ Pole domains', fields: domainFields });
   if (mediaFields.length > 0) sections.push({ name: 'media', label: '🖼️ Images', fields: mediaFields });
   if (relationsFields.length > 0) sections.push({ name: 'relations', label: '🔗 Categories', fields: relationsFields });
   if (advancedFields.length > 0) sections.push({ name: 'advanced', label: '⚙️ Advanced', fields: advancedFields });
@@ -731,7 +748,8 @@ export default function AtlanticDunesForm({ collectionName, mode, itemId, siteNa
   function addArrayItem(fieldName: string, defaultValue: any = '') {
     setFormData((prev) => {
       const list = Array.isArray(prev[fieldName]) ? [...prev[fieldName]] : [];
-      const newItem = fieldName === 'domains' && defaultValue && typeof defaultValue === 'object'
+      const hasDomainSlug = ['domains', 'productDomains', 'serviceDomains', 'subcategories'].includes(fieldName);
+      const newItem = hasDomainSlug && defaultValue && typeof defaultValue === 'object'
         ? { ...defaultValue, slug: '' }
         : defaultValue;
       return { ...prev, [fieldName]: [...list, newItem] };
@@ -750,7 +768,7 @@ export default function AtlanticDunesForm({ collectionName, mode, itemId, siteNa
     setFormData((prev) => {
       const list = Array.isArray(prev[fieldName]) ? [...prev[fieldName]] : [];
       const item = { ...list[index], [key]: value };
-      if ((fieldName === 'domains' || fieldName === 'subcategories') && key === 'label') {
+      if ((['domains', 'productDomains', 'serviceDomains', 'subcategories'].includes(fieldName)) && key === 'label') {
         item.slug = slugify(value);
       }
       list[index] = item;
@@ -771,12 +789,15 @@ export default function AtlanticDunesForm({ collectionName, mode, itemId, siteNa
       payload._id = 'main';
     }
 
-    if (activeSchema.fields.some((field) => field.name === 'domains') && Array.isArray(payload.domains)) {
-      payload.domains = payload.domains.map((domain: any) => ({
-        ...domain,
-        slug: slugify(String(domain?.label ?? '')),
-      }));
-    }
+    const objectArrayFields = ['domains', 'productDomains', 'serviceDomains'];
+    objectArrayFields.forEach((fieldName) => {
+      if (activeSchema.fields.some((field) => field.name === fieldName) && Array.isArray(payload[fieldName])) {
+        payload[fieldName] = payload[fieldName].map((domain: any) => ({
+          ...domain,
+          slug: slugify(String(domain?.label ?? '')),
+        }));
+      }
+    });
 
     if (['boutiqueCategories', 'newsCategories'].includes(collectionName) && Array.isArray(payload.subcategories)) {
       payload.subcategories = payload.subcategories.map((subcategory: any) => ({
@@ -1544,6 +1565,20 @@ export default function AtlanticDunesForm({ collectionName, mode, itemId, siteNa
     }
   }
 
+  const handleBack = useCallback(() => {
+    if (typeof window !== 'undefined' && window.history.length > 2) {
+      router.back();
+      return;
+    }
+
+    const fallbackPage = collectionToManagePage[collectionName] ?? '';
+    if (siteName && fallbackPage) {
+      router.push(`/dashboard/websites/${siteName}/${fallbackPage}`);
+    } else {
+      router.push('/dashboard/atlanticdunes');
+    }
+  }, [collectionName, router, siteName]);
+
   return (
     <div className="space-y-6 bg-white min-h-screen">
       {/* Header */}
@@ -1558,7 +1593,7 @@ export default function AtlanticDunesForm({ collectionName, mode, itemId, siteNa
           </div>
           <button
             type="button"
-            onClick={() => router.push(siteName ? `/dashboard/websites/${siteName}` : '/dashboard/atlanticdunes')}
+            onClick={handleBack}
             className="inline-flex items-center gap-2 rounded-lg border border-brand-300 bg-white px-4 py-2.5 text-sm font-medium text-brand-900 shadow-xs transition-all duration-200 hover:bg-brand-50 hover:shadow"
           >
             <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
@@ -1675,7 +1710,7 @@ export default function AtlanticDunesForm({ collectionName, mode, itemId, siteNa
           </button>
           <button
             type="button"
-            onClick={() => router.back()}
+            onClick={handleBack}
             className="inline-flex items-center gap-2 rounded-lg border border-brand-300/80 bg-white px-6 py-3 text-sm font-medium text-brand-900 shadow-xs transition-all duration-200 hover:bg-slate-300/50/50 hover:shadow"
           >
             <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
