@@ -1,12 +1,22 @@
-'use client';
+import { redirect } from 'next/navigation';
 
-import { useParams } from 'next/navigation';
-import AtlanticDunesForm from 'components/atlanticdunes-form-improved';
+const collectionToPage: Record<string, string> = {
+  poles: 'manage-poles-domains',
+  domains: 'manage-poles-domains',
+  services: 'manage-services',
+  products: 'manage-products',
+  boutique: 'manage-boutique',
+  news: 'manage-news',
+  newsCategories: 'manage-news-categories',
+  boutiqueCategories: 'manage-boutique-categories',
+  entrepriseInfo: 'manage-entreprise-informations',
+};
 
-export default function AtlanticDunesEditPage() {
-  const params = useParams();
-  const collectionName = Array.isArray(params?.collection) ? params.collection[0] : params?.collection ?? '';
-  const itemId = Array.isArray(params?.id) ? params.id[0] : params?.id ?? '';
-
-  return <AtlanticDunesForm collectionName={collectionName} mode="edit" itemId={itemId} />;
+export default async function AtlanticDunesEditPage({ params }: { params: Promise<{ collection: string; id: string }> }) {
+  const { collection, id } = await params;
+  const page = collectionToPage[collection];
+  if (!page || !id) {
+    redirect('/dashboard/websites/atlanticdunes');
+  }
+  redirect(`/dashboard/websites/atlanticdunes/${page}/${encodeURIComponent(id)}`);
 }

@@ -663,7 +663,7 @@ export default function AtlanticDunesForm({ collectionName, mode, itemId, siteNa
       toast.success(successMessage);
       setMessage(successMessage);
       if (mode === 'create' && result.document?._id) {
-        const dashboardPrefix = siteName ? `/dashboard/websites/${siteName}` : '/dashboard/atlanticdunes';
+        const dashboardPrefix = siteName ? `/dashboard/websites/${siteName}` : '/dashboard/websites/atlanticdunes';
         router.push(`${dashboardPrefix}/${collectionName}/${encodeURIComponent(result.document._id)}`);
       }
     } catch (err) {
@@ -1401,7 +1401,7 @@ export default function AtlanticDunesForm({ collectionName, mode, itemId, siteNa
           </div>
           <button
             type="button"
-            onClick={() => router.push(siteName ? `/dashboard/websites/${siteName}` : '/dashboard/atlanticdunes')}
+            onClick={() => router.push(siteName ? `/dashboard/websites/${siteName}` : '/dashboard/websites/atlanticdunes')}
             className="inline-flex items-center gap-2 rounded-lg border border-slate-200/60 bg-white px-4 py-2.5 text-sm font-medium text-slate-700 shadow-sm transition-all duration-200 hover:bg-slate-50 hover:shadow"
           >
             <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">

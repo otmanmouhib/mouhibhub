@@ -844,7 +844,7 @@ export default function AtlanticDunesForm({ collectionName, mode, itemId, siteNa
       toast.success(successMessage);
       setMessage(successMessage);
       if (mode === 'create' && result.document?._id) {
-        const dashboardPrefix = siteName ? `/dashboard/websites/${siteName}` : '/dashboard/atlanticdunes';
+        const dashboardPrefix = siteName ? `/dashboard/websites/${siteName}` : '/dashboard/websites/atlanticdunes';
         router.push(`${dashboardPrefix}/${getManagePageKey(collectionName)}/${encodeURIComponent(result.document._id)}`);
       }
     } catch (err) {
@@ -1605,7 +1605,7 @@ export default function AtlanticDunesForm({ collectionName, mode, itemId, siteNa
     if (siteName && fallbackPage) {
       router.push(`/dashboard/websites/${siteName}/${fallbackPage}`);
     } else {
-      router.push('/dashboard/atlanticdunes');
+      router.push('/dashboard/websites/atlanticdunes');
     }
   }, [collectionName, router, siteName]);
 
