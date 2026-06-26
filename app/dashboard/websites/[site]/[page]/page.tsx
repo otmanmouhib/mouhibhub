@@ -289,18 +289,6 @@ export default function SiteManagementPage() {
       loadRelated('images', setImageMap, 'filename');
       if (collection === 'news') {
         loadRelated('newsCategories', setCategoryMap, 'label');
-        // Load category data for filter display
-        (async () => {
-          try {
-            const response = await fetchWithAuthRedirect(router, `${apiPrefix}/related/newsCategories`);
-            if (response.ok) {
-              const data = await response.json();
-              setCategoryData(Array.isArray(data.items) ? data.items : []);
-            }
-          } catch {
-            // Ignore errors
-          }
-        })();
       }
       if (['products', 'services', 'boutique'].includes(collection)) {
         loadRelated('poles', setPoleMap, 'label');
