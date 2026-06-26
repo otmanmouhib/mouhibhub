@@ -209,7 +209,7 @@ export default function SiteManagementPage() {
     } finally {
       setLoading(false);
     }
-  }, [collection, router, selectedDomain, selectedPole, supportedSite, apiPrefix]);
+  }, [collection, router, selectedDomain, selectedPole, selectedCategory, selectedSubcategory, supportedSite, apiPrefix]);
 
   const loadGallery = useCallback(async () => {
     if (!supportedSite) return;
@@ -289,6 +289,18 @@ export default function SiteManagementPage() {
       loadRelated('images', setImageMap, 'filename');
       if (collection === 'news') {
         loadRelated('newsCategories', setCategoryMap, 'label');
+        // Load category data for filter display
+        (async () => {
+          try {
+            const response = await fetchWithAuthRedirect(router, `${apiPrefix}/related/newsCategories`);
+            if (response.ok) {
+              const data = await response.json();
+              setCategoryData(Array.isArray(data.items) ? data.items : []);
+            }
+          } catch {
+            // Ignore errors
+          }
+        })();
       }
       if (['products', 'services', 'boutique'].includes(collection)) {
         loadRelated('poles', setPoleMap, 'label');
@@ -541,9 +553,9 @@ export default function SiteManagementPage() {
 
   const renderItemCard = (item: ItemRecord) => (
     <article key={item._id} className="overflow-hidden rounded-[1.75rem] border border-slate-200 bg-white shadow-sm shadow-slate-900/5">
-      {item.imageId ? (
+      {item.imageId || item.image ? (
         <img
-          src={`${apiPrefix}/images/${encodeURIComponent(item.imageId)}`}
+          src={`${apiPrefix}/images/${encodeURIComponent(String(item.imageId ?? item.image))}`}
           alt={item.title ?? item.slug ?? 'Item image'}
           className="h-64 w-full object-cover"
         />

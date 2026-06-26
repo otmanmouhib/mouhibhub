@@ -80,6 +80,10 @@ function getDynamicSubcategoryOptions(collectionName: string, formData: FormData
   return [];
 }
 
+function getManagePageKey(collectionName: string) {
+  return collectionToManagePage[collectionName] ?? collectionName;
+}
+
 function defaultValueForField(field: AtlanticDunesField) {
   switch (field.type) {
     case 'text':
@@ -131,8 +135,8 @@ function normalizeValue(value: any, field: AtlanticDunesField) {
 function getFieldSections(fields: AtlanticDunesField[]): Array<{ name: string; label: string; fields: AtlanticDunesField[] }> {
   const basicFields = fields.filter(f => ['text', 'slug', 'date', 'number'].includes(f.type));
   const contentFields = fields.filter(f => ['textarea'].includes(f.type));
-  const relationsFields = fields.filter(f => ['select', 'multiSelect'].includes(f.type));
   const mediaFields = fields.filter(f => f.relation?.collection === 'images');
+  const relationsFields = fields.filter((f) => ['select', 'multiSelect'].includes(f.type) && f.relation?.collection !== 'images');
   const domainFields = fields.filter((f) => ['productDomains', 'serviceDomains'].includes(f.name));
   const advancedFields = fields.filter(
     (f) => !basicFields.includes(f)
@@ -214,6 +218,14 @@ export default function AtlanticDunesForm({ collectionName, mode, itemId, siteNa
       acc[field.name] = normalizeValue(undefined, field);
       return acc;
     }, {});
+    
+    // Auto-generate dates for news when creating
+    if (mode === 'create' && collectionName === 'news') {
+      const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD format
+      defaults.date = today;
+      defaults.publishedAt = today;
+    }
+    
     setFormData(defaults);
     
     // Initialize all sections as collapsed
@@ -222,7 +234,7 @@ export default function AtlanticDunesForm({ collectionName, mode, itemId, siteNa
       allCollapsed[section.name] = false;
     });
     setExpandedSections(allCollapsed);
-  }, [schema, fieldSections]);
+  }, [schema, fieldSections, mode, collectionName]);
 
   useEffect(() => {
     setImagePage(0);
@@ -805,6 +817,16 @@ export default function AtlanticDunesForm({ collectionName, mode, itemId, siteNa
         slug: slugify(String(subcategory?.label ?? '')),
       }));
     }
+
+    if (collectionName === 'news') {
+      const selectedCategory = (relatedOptions.newsCategories ?? []).find(
+        (option) => String(option.value) === String(payload.categoryId ?? '') || String((option as any).slug ?? option.value) === String(payload.categoryId ?? ''),
+      );
+      if (selectedCategory?.label) {
+        payload.category = selectedCategory.label;
+      }
+    }
+
     try {
       const url = mode === 'create' ? `${apiPrefix}/${collectionName}` : `${apiPrefix}/${collectionName}/${encodeURIComponent(itemId ?? String(formData._id))}`;
       const method = mode === 'create' ? 'POST' : 'PUT';
@@ -823,7 +845,7 @@ export default function AtlanticDunesForm({ collectionName, mode, itemId, siteNa
       setMessage(successMessage);
       if (mode === 'create' && result.document?._id) {
         const dashboardPrefix = siteName ? `/dashboard/websites/${siteName}` : '/dashboard/atlanticdunes';
-        router.push(`${dashboardPrefix}/${collectionName}/${encodeURIComponent(result.document._id)}`);
+        router.push(`${dashboardPrefix}/${getManagePageKey(collectionName)}/${encodeURIComponent(result.document._id)}`);
       }
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Unable to save record';
@@ -845,17 +867,25 @@ export default function AtlanticDunesForm({ collectionName, mode, itemId, siteNa
     switch (field.type) {
       case 'text':
       case 'date':
-      case 'number':
+      case 'number': {
+        const isAutoDateField = mode === 'create' && collectionName === 'news' && ['date', 'publishedAt'].includes(field.name);
         return (
-          <input
-            type={field.type === 'number' ? 'number' : field.type === 'date' ? 'date' : 'text'}
-            id={field.name}
-            value={String(value ?? '')}
-            onChange={(event) => updateField(field.name, field.type === 'number' ? Number(event.target.value) : event.target.value)}
-            className="mt-3 w-full rounded-lg border border-brand-300/80 bg-white px-4 py-2.5 text-sm text-brand-900 outline-none transition focus:border-brand-400 focus:ring-2 focus:ring-brand-500/20"
-            placeholder={field.placeholder}
-          />
+          <div>
+            <input
+              type={field.type === 'number' ? 'number' : field.type === 'date' ? 'date' : 'text'}
+              id={field.name}
+              value={String(value ?? '')}
+              onChange={(event) => updateField(field.name, field.type === 'number' ? Number(event.target.value) : event.target.value)}
+              readOnly={isAutoDateField}
+              className={`mt-3 w-full rounded-lg border border-brand-300/80 bg-white px-4 py-2.5 text-sm text-brand-900 outline-none transition focus:border-brand-400 focus:ring-2 focus:ring-brand-500/20 ${
+                isAutoDateField ? 'bg-brand-50/80 text-brand-600 cursor-not-allowed' : ''
+              }`}
+              placeholder={field.placeholder}
+            />
+            {isAutoDateField && <p className="mt-2 text-xs text-brand-600">🔒 Auto-generated as today's date.</p>}
+          </div>
         );
+      }
       case 'slug': {
         return (
           <div className="mt-3 space-y-2">

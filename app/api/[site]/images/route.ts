@@ -16,6 +16,24 @@ function badRequest(message: string) {
   });
 }
 
+function slugify(value: string) {
+  const normalized = value
+    .normalize('NFD')
+    .replace(/\p{Diacritic}/gu, '')
+    .toLowerCase()
+    .trim();
+
+  return normalized
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/(^-|-$)/g, '');
+}
+
+function generateUniqueSlug(filename: string, index: number) {
+  const nameWithoutExt = filename.replace(/\.[^/.]+$/, '');
+  const slug = slugify(nameWithoutExt) || 'image';
+  return index > 0 ? `${slug}-${index}` : slug;
+}
+
 export async function POST(request: NextRequest, context: { params: Promise<{ site: string }> }) {
   const { site } = await context.params;
   const token = request.cookies.get('mouhibhub-auth')?.value ?? null;
@@ -43,10 +61,13 @@ export async function POST(request: NextRequest, context: { params: Promise<{ si
   const db = await getSiteDb(site);
   const uploadedItems: Array<{ _id: string; filename: string; label: string; contentType: string }> = [];
 
-  for (const file of files) {
+  for (let i = 0; i < files.length; i++) {
+    const file = files[i];
     const arrayBuffer = await file.arrayBuffer();
     const buffer = Buffer.from(arrayBuffer);
+    const slug = generateUniqueSlug(file.name, i);
     const result = await db.collection('images').insertOne({
+      slug,
       filename: file.name,
       label: file.name,
       contentType: file.type || 'application/octet-stream',

@@ -73,11 +73,15 @@ export async function GET(request: NextRequest, context: { params: Promise<{ sit
     });
   }
 
-  if (category && collection === 'boutique') {
-    conditions.push({ category });
+  if (category && ['boutique', 'news'].includes(collection)) {
+    if (collection === 'boutique') {
+      conditions.push({ category });
+    } else {
+      conditions.push({ categoryId: category });
+    }
   }
 
-  if (subcategory && collection === 'boutique') {
+  if (subcategory && ['boutique', 'news'].includes(collection)) {
     conditions.push({ subcategory });
   }
 

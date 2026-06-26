@@ -274,8 +274,8 @@ export default function DashboardNav() {
                 const data = await response.json();
                 newsCategories = Array.isArray(data.items)
                   ? data.items.map((item: any) => ({
-                      value: String(item.id ?? item._id),
-                      label: String(item.label ?? item.id ?? item._id),
+                      value: String(item.slug ?? item._id),
+                      label: String(item.label ?? item.slug ?? item._id),
                       subcategories: Array.isArray(item.subcategories)
                         ? item.subcategories.map((subcategory: any) => ({
                             value: String(subcategory.slug ?? subcategory.id ?? subcategory.label ?? ''),
