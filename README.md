@@ -1,571 +1,411 @@
-# MBHUB CMS Dashboard
+# MouhibHub CMS
+## Official Documentation
+### Version: 0.1.0-alpha
+### Date: 2026-06-27
+### Classification: Internal + Client Delivery
 
-A modern Next.js dashboard for MBHUB CMS with:
+## Document Control
+- Product: MouhibHub CMS Dashboard
+- Technical version baseline: 0.1.0 (package version)
+- Documentation release label: 0.1.0-alpha
+- Main audience:
+- Technical leadership (architecture, security, operations)
+- Client stakeholders (functional scope, platform structure, workflows)
 
-- Mobile-first responsive design
-- Login system with secure token cookie
-- MongoDB integration for contact submissions
-- Support for retrieving `contacts` from `atlanticdunes`, `adrobiofarm`, and `mouhibhub` databases
+---
 
-## Setup
+## 1. Executive Summary
+MouhibHub CMS is a multi-website administration platform built with Next.js, MongoDB, and role-based access control. The platform centralizes content and operational workflows for multiple websites, while also exposing a dedicated internal management layer for MouhibHub operations.
 
-1. Copy `.env.example` to `.env.local`
-2. Update `MONGODB_URI`, `AUTH_SECRET`, `ADMIN_EMAIL`, and `ADMIN_PASSWORD`
-3. Install dependencies:
+At this stage (v0.1.0-alpha), the platform includes:
+- Secure authentication and admin-only dashboard access
+- Multi-site content management for `atlanticdunes` and `adrobiofarm`
+- Internal user, contact, and settings management in `mouhibhub`
+- Dynamic CRUD APIs for website collections and media
+- Registration workflow with approval gate (`pending` role)
 
-```bash
-npm install
-```
+---
 
-4. Run development server:
+## 2. Product Scope (Client + Technical)
+### 2.1 Business Scope
+The platform is intended to:
+- Manage website content (products, services, boutique, news, categories, media)
+- Handle operational submissions (contacts, reports)
+- Manage platform users and authentication policy
+- Allow controlled onboarding via registration toggle and approval workflow
 
-```bash
-npm run dev
-```
+### 2.2 Supported Website Databases
+- `atlanticdunes`
+- `adrobiofarm`
+- `mouhibhub` (internal control-plane database)
 
-5. Seed sample contact data and the initial admin user:
+### 2.3 Current Release Maturity (Alpha)
+- Core workflows are implemented and build successfully
+- Functional coverage is broad
+- Production hardening and compliance controls should continue in later releases
 
-```bash
-npm run seed
-```
+---
 
-6. Open http://localhost:3000
+## 3. High-Level Architecture
+### 3.1 Technology Stack
+- Frontend + backend framework: Next.js 16 (App Router)
+- UI library: React 18
+- Styling: Tailwind CSS
+- Runtime language: TypeScript
+- Database: MongoDB
+- Auth crypto: bcryptjs
+- Token auth: jsonwebtoken
+- Notification UX: sonner (toast system)
 
-## Development login
+### 3.2 Architecture Pattern
+- Monolithic Next.js application using App Router
+- API routes under `app/api/**`
+- Client dashboard under `app/dashboard/**`
+- Multi-database access through shared MongoDB client utilities
 
-The seed script creates the admin user in the `mouhibhub` database:
+### 3.3 Deployment Build Status
+- `npm run build` completes successfully for current code state
 
-- `admin@mnhub.com`
-- `ChangeMe123!`
+---
 
+## 4. Environment and Configuration
+### 4.1 Required Environment Variables
+- `MONGODB_URI`
+- `AUTH_SECRET`
 
+### 4.2 Optional/legacy variables referenced in setup narrative
+- `ADMIN_EMAIL`
+- `ADMIN_PASSWORD`
 
-**MongoDB Compass Architecture Comparison Report**
+### 4.3 Startup commands
+- Install: `npm install`
+- Dev: `npm run dev`
+- Build: `npm run build`
+- Prod start: `npm run start`
+- Seed: `npm run seed`
 
-**Scope**
-This report compares the current architecture of the `adrobiofarm` and `atlanticdunes` databases based on:
-- collection names
-- database statistics
-- schema samples for boutique-related collections
-- available index information
+---
 
-**Overall conclusion**
+## 5. Website Structure (Information Architecture)
 
-The two databases are **similar in business purpose** but **not identical in architecture**.  
-They share the same broad application domains, but they differ significantly in the boutique model, document shape, and index strategy.
+## 5.1 Public-facing app routes
+- `/` (homepage)
+- `/login`
+- `/register` (visibility controlled by admin setting)
 
-If your goal is a **single high-quality, identical model architecture**, the databases are **not aligned yet**.
+## 5.2 Dashboard root routes
+- `/dashboard`
+- `/dashboard/websites`
+- `/dashboard/contacts`
+- `/dashboard/users`
+- `/dashboard/settings`
 
-**High-level database comparison**
+## 5.3 Website-specific dashboard routes
+Pattern: `/dashboard/websites/[site]/*`
 
-| Area | `adrobiofarm` | `atlanticdunes` | Match |
-|---|---|---|---|
-| Number of collections | 12 | 12 | Yes |
-| Views | 0 | 0 | Yes |
-| Objects | 85 | 148 | No |
-| Average document size | ~7.3 KB | ~62.1 KB | No |
-| Data size | ~620 KB | ~9.2 MB | No |
-| Storage size | ~2.2 MB | ~32.2 MB | No |
-| Index count | 23 | 15 | No |
+Major pages include:
+- `/dashboard/websites/[site]`
+- `/dashboard/websites/[site]/[page]`
+- `/dashboard/websites/[site]/[page]/new`
+- `/dashboard/websites/[site]/[page]/[id]`
+- `/dashboard/websites/[site]/contacts`
+- `/dashboard/websites/[site]/reports`
+- `/dashboard/websites/[site]/users`
+- `/dashboard/websites/[site]/manage-poles-domains`
+- `/dashboard/websites/[site]/manage-poles-domains/new`
+- `/dashboard/websites/[site]/manage-poles-domains/[id]`
 
-**Interpretation**
-- `atlanticdunes` stores **larger documents** and more total data.
-- `adrobiofarm` has **more indexes**, which suggests a more heavily indexed or more query-specialized structure.
-- Both databases are small in absolute size, but their modeling patterns are clearly different.
+## 5.4 Navigation and Orientation
+Dashboard navigation includes:
+- Global sections (Overview, Contacts, Users, Settings)
+- Expandable website tree with page-level shortcuts
+- Breadcrumb/orientation support in website scope layouts
 
-**Collection architecture comparison**
+---
 
-The databases share many of the same domain areas:
+## 6. Authentication and Authorization Model
 
+## 6.1 Session mechanism
+- JWT stored in HTTP-only cookie: `mouhibhub-auth`
+- Token payload includes user email
+- Token expiration configured to 1 hour
+
+## 6.2 Access policy
+- `admin`: full dashboard/API access
+- `pending`: blocked from admin login
+- Non-admin roles are forbidden from admin-only endpoints
+
+## 6.3 Registration and approval
+- Registration endpoint creates accounts with role `pending`
+- Registration button visibility is controlled by `settings` document (`_id: 'auth'`)
+- Only admin can toggle registration visibility
+
+---
+
+## 7. Database Structure
+
+## 7.1 Database overview
+The platform uses three logical databases:
+1. `mouhibhub` (identity, internal administration, global controls)
+2. `atlanticdunes` (website content and submissions)
+3. `adrobiofarm` (website content and submissions)
+
+## 7.2 `mouhibhub` database (control plane)
+### Core collections
+- `users`
+- `settings`
+- `contacts` (internal contact submissions)
+- optional operations collections depending on runtime usage
+
+### `users` document shape (observed/implemented)
+- `_id`
+- `email`
+- `passwordHash`
+- `role` (`admin` or `pending` currently enforced)
+- `createdAt`
+- `updatedAt`
+
+### `settings` document shape (auth settings)
+- `_id: 'auth'`
+- `registerEnabled`
+- `createdAt`
+- `updatedAt`
+- `updatedBy`
+
+### `contacts` document shape (implemented CRUD)
+- `_id`
+- `name`
+- `email`
+- `message`
+- `phone` (optional)
+- `status` (e.g. `New`, `In Progress`, `Resolved`)
+- `createdAt`
+- `updatedAt`
+- `createdBy` / `updatedBy` where applicable
+
+## 7.3 Website databases (`atlanticdunes`, `adrobiofarm`)
+### Common collection families (availability may vary)
+- `contacts`
+- `reports`
+- `users` (site-level depending on project mode)
+- `poles`
+- `domains`
+- `products`
 - `services`
+- `boutique` or `boutiqueProducts`
+- `boutiqueCategories`
 - `news`
 - `newsCategories`
-- `products`
-- `poles`
-- `contacts`
 - `entrepriseInfo`
-- `images`
-- `images.files`
-- `images.chunks`
-- `boutiqueCategories`
-
-**Main structural difference**
-- `adrobiofarm` uses `boutiqueProducts`
-- `atlanticdunes` uses `boutique`
-
-That means the boutique domain is modeled differently at the collection level.
-
-**Boutique schema comparison**
-
-**`adrobiofarm.boutiqueProducts`**
-- Sampled schema contains **12 fields**
-- Main fields observed:
-  - `_id`
-  - `slug`
-  - `title`
-  - `category`
-  - `subcategory`
-  - `excerpt`
-  - `description`
-  - `detail`
-  - `price`
-  - `stock`
-  - `image`
-  - `tags`
-
-**Architecture characteristics**
-- Simpler and more compact
-- More normalized-looking field set
-- Uses fewer product attributes
-- No obvious explicit reference fields in the sampled schema for category IDs or subcategory IDs
-
-**`atlanticdunes.boutique`**
-- Sampled schema contains **28 fields**
-- Main fields observed:
-  - `_id`
-  - `slug`
-  - `title`
-  - `shortDescription`
-  - `description`
-  - `details`
-  - `specs`
-  - `price`
-  - `availability`
-  - `inStock`
-  - `pole`
-  - `poleId`
-  - `domain`
-  - `domainId`
-  - `image`
-  - `boutiqueCategoryId`
-  - `boutiqueSubcategoryId`
-  - `createdAt`
-  - `updatedAt`
-  - `sku`
-  - `unitPrice`
-  - `currency`
-  - `inventoryCount`
-  - `gallery`
-  - `warranty`
-  - `tags`
-  - `featured`
-  - `status`
-
-**Architecture characteristics**
-- Much richer document model
-- More embedded business metadata
-- More explicit relationship-style fields
-- More denormalized presentation fields
-- Better suited to a fuller product/catalog experience
-
-**Boutique categories comparison**
-
-**`adrobiofarm.boutiqueCategories`**
-- Sampled schema contains **7 fields**
-- Fields observed:
-  - `_id`
-  - `slug`
-  - `label`
-  - `description`
-  - `subcategories`
-  - `createdAt`
-  - `updatedAt`
-
-**`atlanticdunes.boutiqueCategories`**
-- Sampled schema contains **7 fields**
-- Fields observed:
-  - `_id`
-  - `slug`
-  - `label`
-  - `description`
-  - `subcategories`
-  - `createdAt`
-  - `updatedAt`
-
-**Category schema result**
-- The `boutiqueCategories` documents are **structurally aligned** in both databases.
-- This is one of the strongest matches between the two databases.
-
-**Index strategy comparison**
-
-**`adrobiofarm.boutiqueProducts`**
-- `_id_`
-- `slug_1`
-
-**`adrobiofarm.boutiqueCategories`**
-- `_id_`
-- `slug_1`
-
-**`atlanticdunes.boutiqueCategories`**
-- `_id_`
-- `slug_1`
-
-**Index observations**
-- `boutiqueCategories` indexing is **consistent** between the two databases.
-- `adrobiofarm.boutiqueProducts` has a minimal index set.
-- I was not able to complete a matching index retrieval for `atlanticdunes.boutique` in this run, so a full boutique-to-boutique index equivalence check is still incomplete.
-- Based on the schema richness, `atlanticdunes.boutique` is likely designed for a more complex access pattern than `adrobiofarm.boutiqueProducts`.
-
-**Relationship strategy comparison**
-
-**`adrobiofarm`**
-- Appears to use a simpler boutique model
-- Category and subcategory are stored as string fields
-- Relationship strategy is lighter-weight and more compact
-
-**`atlanticdunes`**
-- Uses explicit relationship-style fields such as:
-  - `boutiqueCategoryId`
-  - `boutiqueSubcategoryId`
-  - `poleId`
-  - `domainId`
-- Also stores both identifier-style and display-style fields
-- This indicates a more hybrid model:
-  - references for structure
-  - embedded values for display convenience
-
-**Relationship strategy result**
-- The two databases do **not** match.
-- `atlanticdunes` is more explicit and richer in its relationships.
-
-**Media storage strategy comparison**
-
-Both databases use:
-- `images`
-- `images.files`
-- `images.chunks`
-
-This strongly suggests both use **GridFS-style media storage**.
-
-**Media strategy result**
-- This part of the architecture **matches well at the database level**.
-- However, at the document level:
-  - `atlanticdunes.boutique` includes a `gallery` array
-  - `adrobiofarm.boutiqueProducts` only shows a single `image` field in the sampled schema
-
-So while the storage backend is aligned, the **document usage pattern is not identical**.
-
-**Validation rules**
-- Validation rules were **not inspected yet**.
-- Therefore, no conclusion can be made about whether validation rules match.
-- This is an important remaining step if your goal is a fully identical architecture.
-
-**Architecture quality assessment**
-
-**`adrobiofarm`**
-- More compact
-- Simpler boutique model
-- Fewer fields per product document
-- More indexes overall
-- Likely easier to maintain, but less expressive
-
-**`atlanticdunes`**
-- More complete and expressive
-- Larger document payloads
-- More explicit references
-- More presentation-ready structure
-- Likely better for a richer application experience, but more complex
-
-**Do they match all the “high quality” criteria?**
-
-| Criterion | Match? | Notes |
-|---|---|---|
-| Same collection names | No | `boutique` vs `boutiqueProducts` |
-| Same document shape | No | 28 fields vs 12 fields in boutique product model |
-| Same relationship strategy | No | `atlanticdunes` is more explicit and richer |
-| Same index strategy | Partial | `boutiqueCategories` matches; boutique collection index parity not fully confirmed |
-| Same media storage strategy | Partial | Same GridFS collections, but different usage pattern |
-| Same validation rules | Unknown | Not yet inspected |
-
-**Final assessment**
-The databases are **functionally similar**, but they are **not yet architecturally identical**.
-
-The biggest differences are:
-- the boutique collection naming
-- the boutique document structure
-- the relationship strategy
-- the document richness in `atlanticdunes`
-
-**Recommended direction**
-If you want to turn them into one identical model, you should first choose one canonical boutique design:
-
-- **Option A: simpler canonical model**
-  - Align `atlanticdunes` toward `adrobiofarm`
-  - Good if you want fewer fields and simpler maintenance
-
-- **Option B: richer canonical model**
-  - Align `adrobiofarm` toward `atlanticdunes`
-  - Good if you want a more complete, future-proof catalog structure
-
-**Best next step**
-To complete the architecture report properly, the next logical inspection would be:
-- validation rules
-- full index lists for `atlanticdunes.boutique`
-- sample documents from both boutique collections
-- then a final migration blueprint for unifying them
-
-If you want, I can turn this into a **cleaner executive-style report** or a **technical migration report**.**MongoDB Compass Architecture Comparison Report**
-
-**Scope**
-This report compares the current architecture of the `adrobiofarm` and `atlanticdunes` databases based on:
-- collection names
-- database statistics
-- schema samples for boutique-related collections
-- available index information
-
-**Overall conclusion**
-
-The two databases are **similar in business purpose** but **not identical in architecture**.  
-They share the same broad application domains, but they differ significantly in the boutique model, document shape, and index strategy.
-
-If your goal is a **single high-quality, identical model architecture**, the databases are **not aligned yet**.
-
-**High-level database comparison**
-
-| Area | `adrobiofarm` | `atlanticdunes` | Match |
-|---|---|---|---|
-| Number of collections | 12 | 12 | Yes |
-| Views | 0 | 0 | Yes |
-| Objects | 85 | 148 | No |
-| Average document size | ~7.3 KB | ~62.1 KB | No |
-| Data size | ~620 KB | ~9.2 MB | No |
-| Storage size | ~2.2 MB | ~32.2 MB | No |
-| Index count | 23 | 15 | No |
-
-**Interpretation**
-- `atlanticdunes` stores **larger documents** and more total data.
-- `adrobiofarm` has **more indexes**, which suggests a more heavily indexed or more query-specialized structure.
-- Both databases are small in absolute size, but their modeling patterns are clearly different.
-
-**Collection architecture comparison**
-
-The databases share many of the same domain areas:
-
-- `services`
-- `news`
-- `newsCategories`
-- `products`
-- `poles`
-- `contacts`
-- `entrepriseInfo`
-- `images`
-- `images.files`
-- `images.chunks`
-- `boutiqueCategories`
-
-**Main structural difference**
-- `adrobiofarm` uses `boutiqueProducts`
-- `atlanticdunes` uses `boutique`
-
-That means the boutique domain is modeled differently at the collection level.
-
-**Boutique schema comparison**
-
-**`adrobiofarm.boutiqueProducts`**
-- Sampled schema contains **12 fields**
-- Main fields observed:
-  - `_id`
-  - `slug`
-  - `title`
-  - `category`
-  - `subcategory`
-  - `excerpt`
-  - `description`
-  - `detail`
-  - `price`
-  - `stock`
-  - `image`
-  - `tags`
-
-**Architecture characteristics**
-- Simpler and more compact
-- More normalized-looking field set
-- Uses fewer product attributes
-- No obvious explicit reference fields in the sampled schema for category IDs or subcategory IDs
-
-**`atlanticdunes.boutique`**
-- Sampled schema contains **28 fields**
-- Main fields observed:
-  - `_id`
-  - `slug`
-  - `title`
-  - `shortDescription`
-  - `description`
-  - `details`
-  - `specs`
-  - `price`
-  - `availability`
-  - `inStock`
-  - `pole`
-  - `poleId`
-  - `domain`
-  - `domainId`
-  - `image`
-  - `boutiqueCategoryId`
-  - `boutiqueSubcategoryId`
-  - `createdAt`
-  - `updatedAt`
-  - `sku`
-  - `unitPrice`
-  - `currency`
-  - `inventoryCount`
-  - `gallery`
-  - `warranty`
-  - `tags`
-  - `featured`
-  - `status`
-
-**Architecture characteristics**
-- Much richer document model
-- More embedded business metadata
-- More explicit relationship-style fields
-- More denormalized presentation fields
-- Better suited to a fuller product/catalog experience
-
-**Boutique categories comparison**
-
-**`adrobiofarm.boutiqueCategories`**
-- Sampled schema contains **7 fields**
-- Fields observed:
-  - `_id`
-  - `slug`
-  - `label`
-  - `description`
-  - `subcategories`
-  - `createdAt`
-  - `updatedAt`
-
-**`atlanticdunes.boutiqueCategories`**
-- Sampled schema contains **7 fields**
-- Fields observed:
-  - `_id`
-  - `slug`
-  - `label`
-  - `description`
-  - `subcategories`
-  - `createdAt`
-  - `updatedAt`
-
-**Category schema result**
-- The `boutiqueCategories` documents are **structurally aligned** in both databases.
-- This is one of the strongest matches between the two databases.
-
-**Index strategy comparison**
-
-**`adrobiofarm.boutiqueProducts`**
-- `_id_`
-- `slug_1`
-
-**`adrobiofarm.boutiqueCategories`**
-- `_id_`
-- `slug_1`
-
-**`atlanticdunes.boutiqueCategories`**
-- `_id_`
-- `slug_1`
-
-**Index observations**
-- `boutiqueCategories` indexing is **consistent** between the two databases.
-- `adrobiofarm.boutiqueProducts` has a minimal index set.
-- I was not able to complete a matching index retrieval for `atlanticdunes.boutique` in this run, so a full boutique-to-boutique index equivalence check is still incomplete.
-- Based on the schema richness, `atlanticdunes.boutique` is likely designed for a more complex access pattern than `adrobiofarm.boutiqueProducts`.
-
-**Relationship strategy comparison**
-
-**`adrobiofarm`**
-- Appears to use a simpler boutique model
-- Category and subcategory are stored as string fields
-- Relationship strategy is lighter-weight and more compact
-
-**`atlanticdunes`**
-- Uses explicit relationship-style fields such as:
-  - `boutiqueCategoryId`
-  - `boutiqueSubcategoryId`
-  - `poleId`
-  - `domainId`
-- Also stores both identifier-style and display-style fields
-- This indicates a more hybrid model:
-  - references for structure
-  - embedded values for display convenience
-
-**Relationship strategy result**
-- The two databases do **not** match.
-- `atlanticdunes` is more explicit and richer in its relationships.
-
-**Media storage strategy comparison**
-
-Both databases use:
-- `images`
-- `images.files`
-- `images.chunks`
-
-This strongly suggests both use **GridFS-style media storage**.
-
-**Media strategy result**
-- This part of the architecture **matches well at the database level**.
-- However, at the document level:
-  - `atlanticdunes.boutique` includes a `gallery` array
-  - `adrobiofarm.boutiqueProducts` only shows a single `image` field in the sampled schema
-
-So while the storage backend is aligned, the **document usage pattern is not identical**.
-
-**Validation rules**
-- Validation rules were **not inspected yet**.
-- Therefore, no conclusion can be made about whether validation rules match.
-- This is an important remaining step if your goal is a fully identical architecture.
-
-**Architecture quality assessment**
-
-**`adrobiofarm`**
-- More compact
-- Simpler boutique model
-- Fewer fields per product document
-- More indexes overall
-- Likely easier to maintain, but less expressive
-
-**`atlanticdunes`**
-- More complete and expressive
-- Larger document payloads
-- More explicit references
-- More presentation-ready structure
-- Likely better for a richer application experience, but more complex
-
-**Do they match all the “high quality” criteria?**
-
-| Criterion | Match? | Notes |
-|---|---|---|
-| Same collection names | No | `boutique` vs `boutiqueProducts` |
-| Same document shape | No | 28 fields vs 12 fields in boutique product model |
-| Same relationship strategy | No | `atlanticdunes` is more explicit and richer |
-| Same index strategy | Partial | `boutiqueCategories` matches; boutique collection index parity not fully confirmed |
-| Same media storage strategy | Partial | Same GridFS collections, but different usage pattern |
-| Same validation rules | Unknown | Not yet inspected |
-
-**Final assessment**
-The databases are **functionally similar**, but they are **not yet architecturally identical**.
-
-The biggest differences are:
-- the boutique collection naming
-- the boutique document structure
-- the relationship strategy
-- the document richness in `atlanticdunes`
-
-**Recommended direction**
-If you want to turn them into one identical model, you should first choose one canonical boutique design:
-
-- **Option A: simpler canonical model**
-  - Align `atlanticdunes` toward `adrobiofarm`
-  - Good if you want fewer fields and simpler maintenance
-
-- **Option B: richer canonical model**
-  - Align `adrobiofarm` toward `atlanticdunes`
-  - Good if you want a more complete, future-proof catalog structure
-
-**Best next step**
-To complete the architecture report properly, the next logical inspection would be:
-- validation rules
-- full index lists for `atlanticdunes.boutique`
-- sample documents from both boutique collections
-- then a final migration blueprint for unifying them
-
-If you want, I can turn this into a **cleaner executive-style report** or a **technical migration report**.
+- `images` + GridFS structures (`images.files`, `images.chunks`)
+
+### Website contact submissions
+The website-specific "manage-contact-submissions" workflows now support full CRUD against each website database.
+
+### Media architecture
+Image workflows are implemented through image APIs and GridFS-style collections.
+
+---
+
+## 8. API Structure (Technical Reference)
+
+## 8.1 Auth APIs
+- `POST /api/auth/login`
+- `POST /api/auth/logout`
+- `POST /api/auth/register`
+
+## 8.2 User APIs
+- `GET /api/users`
+- `POST /api/users`
+- `PATCH /api/users/[id]`
+- `DELETE /api/users/[id]`
+- `GET /api/users/me`
+- `PATCH /api/users/me`
+- `DELETE /api/users/me`
+
+## 8.3 Settings API
+- `GET /api/settings/registration`
+- `PUT /api/settings/registration`
+
+## 8.4 Contacts APIs
+- `GET /api/contacts?db=<database>`
+- `POST /api/contacts?db=<database>`
+- `PATCH /api/contacts/[id]?db=<database>`
+- `DELETE /api/contacts/[id]?db=<database>`
+
+## 8.5 Dashboard aggregate APIs
+- `GET /api/dashboard/stats`
+- `GET /api/dashboard/websites`
+- `GET /api/dashboard/websites/[site]`
+
+## 8.6 Dynamic website content APIs
+- `GET /api/[site]`
+- `GET|POST|PATCH|DELETE /api/[site]/[collection]`
+- `GET|PATCH|DELETE /api/[site]/[collection]/[id]`
+- `GET /api/[site]/related/[type]`
+- `POST /api/[site]/images`
+- `PATCH|DELETE /api/[site]/images/[id]`
+
+## 8.7 Other APIs
+- `GET /api/reports`
+- `GET /api/images/[id]`
+
+---
+
+## 9. Functional Modules
+
+## 9.1 Internal administration (MouhibHub)
+- User management (CRUD + role management)
+- Settings management (registration toggle)
+- Internal contacts management (CRUD)
+- Profile self-management
+
+## 9.2 Website operations
+- Website-level contacts management (CRUD)
+- Reports visibility and management modules
+- Content editing per collection
+- Media upload/replace/delete workflows
+
+## 9.3 Content management pages
+- Products, services, boutique, news
+- Category structures for boutique/news
+- Poles/domains relationships
+- Enterprise information forms
+
+---
+
+## 10. Security and Data Protection
+
+## 10.1 Authentication controls
+- HTTP-only auth cookie
+- Token verification on protected API routes
+- Login limited to admin role
+
+## 10.2 Authorization controls
+- Admin checks implemented for user management endpoints
+- Registration control endpoint restricted to admins
+- Last-admin safety checks in delete/demotion flows
+
+## 10.3 Password handling
+- Passwords are hashed with bcrypt
+- Raw passwords are never returned by API responses
+
+## 10.4 Current alpha caveats
+- Additional hardening recommended for production:
+- CSRF strategy for state-changing endpoints
+- Audit logging for sensitive operations
+- Rate limiting for auth endpoints
+- Session invalidation strategy beyond cookie expiration
+
+---
+
+## 11. Operations Guide
+
+## 11.1 Local development lifecycle
+1. Configure `.env.local`
+2. Install dependencies
+3. Seed initial data if needed
+4. Run dev server
+5. Validate with production build
+
+## 11.2 Build and release gate
+Minimum gate for release candidate:
+- `npm run build` successful
+- Key admin flows validated manually:
+- Login/logout
+- User CRUD
+- Contact CRUD (global + website-specific)
+- Settings toggle for registration
+
+## 11.3 Recommended backup strategy
+- Daily dump of `mouhibhub`, `atlanticdunes`, `adrobiofarm`
+- Point-in-time backup policy based on MongoDB deployment capabilities
+- Restore rehearsal in staging
+
+---
+
+## 12. Client-Facing Functional Explanation
+
+For MouhibHub stakeholders, the platform delivers:
+- A secure administration area
+- A single place to manage core site content
+- Contact and report processing flows
+- Controlled user onboarding (register -> pending -> admin approval)
+- Visual clarity with structured dashboard navigation and breadcrumbs
+
+Operationally, this reduces manual handling and centralizes data operations by website.
+
+---
+
+## 13. Known Constraints in v0.1.0-alpha
+- Alpha phase: feature-complete core, but still evolving in polish/compliance
+- Some legacy routes/components exist alongside new consolidated flows
+- Documentation should be updated when schema or route contracts change
+
+---
+
+## 14. Recommended Next Milestones (v0.1.x)
+1. Add API contract schemas (OpenAPI/Swagger)
+2. Add structured audit logs for admin actions
+3. Add stronger validation and sanitization layer for all write endpoints
+4. Add role expansion model (if non-admin operational roles are needed)
+5. Add pagination/search/server-side filtering for large datasets
+6. Add monitoring dashboard for API errors and performance
+
+---
+
+## 15. Appendix A - Current Runtime Route Inventory (Build-verified)
+
+### App routes
+- `/`
+- `/_not-found`
+- `/dashboard`
+- `/dashboard/atlanticdunes`
+- `/dashboard/atlanticdunes/[collection]`
+- `/dashboard/atlanticdunes/[collection]/[id]`
+- `/dashboard/atlanticdunes/[collection]/new`
+- `/dashboard/contacts`
+- `/dashboard/settings`
+- `/dashboard/users`
+- `/dashboard/websites`
+- `/dashboard/websites/[site]`
+- `/dashboard/websites/[site]/[page]`
+- `/dashboard/websites/[site]/[page]/[id]`
+- `/dashboard/websites/[site]/[page]/new`
+- `/dashboard/websites/[site]/contacts`
+- `/dashboard/websites/[site]/manage-poles-domains`
+- `/dashboard/websites/[site]/manage-poles-domains/[id]`
+- `/dashboard/websites/[site]/manage-poles-domains/new`
+- `/dashboard/websites/[site]/reports`
+- `/dashboard/websites/[site]/users`
+- `/login`
+- `/register`
+
+### API routes
+- `/api/[site]`
+- `/api/[site]/[collection]`
+- `/api/[site]/[collection]/[id]`
+- `/api/[site]/images`
+- `/api/[site]/images/[id]`
+- `/api/[site]/related/[type]`
+- `/api/auth/login`
+- `/api/auth/logout`
+- `/api/auth/register`
+- `/api/contacts`
+- `/api/contacts/[id]`
+- `/api/dashboard/stats`
+- `/api/dashboard/websites`
+- `/api/dashboard/websites/[site]`
+- `/api/images/[id]`
+- `/api/reports`
+- `/api/settings/registration`
+- `/api/users`
+- `/api/users/[id]`
+- `/api/users/me`
+
+---
+
+## 16. Appendix B - Ownership and Usage Notes
+- This document is the official baseline for `v0.1.0-alpha` handoff.
+- Technical lead should update this document on any API contract, schema, or auth model change.
+- Client-facing extracts can be generated from sections 1, 2, 5, 12, and 13.
