@@ -51,6 +51,7 @@ const items = [
   { href: '/dashboard', label: 'Overview' },
   { href: '/dashboard/contacts', label: 'Contacts' },
   { href: '/dashboard/users', label: 'Users' },
+  { href: '/dashboard/settings', label: 'Settings' },
 ];
 
 function buildSitePages(siteName: string, availableCollections: string[]): PageItem[] {

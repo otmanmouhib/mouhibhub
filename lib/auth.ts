@@ -8,13 +8,28 @@ if (!SECRET) {
   throw new Error('Missing AUTH_SECRET environment variable.');
 }
 
+export type AuthTokenPayload = {
+  email: string;
+  iat?: number;
+  exp?: number;
+};
+
+export type AdminCredentialsValidationResult = {
+  ok: boolean;
+  reason?: 'missing' | 'invalid' | 'pending' | 'forbidden';
+};
+
 export function createAuthToken(payload: { email: string }) {
   return jwt.sign(payload, SECRET as string, { expiresIn: '1h' });
 }
 
 export function verifyAuthToken(token: string) {
   try {
-    return jwt.verify(token, SECRET as string);
+    const payload = jwt.verify(token, SECRET as string);
+    if (typeof payload === 'object' && typeof payload.email === 'string') {
+      return payload as AuthTokenPayload;
+    }
+    return null;
   } catch {
     return null;
   }
@@ -22,13 +37,26 @@ export function verifyAuthToken(token: string) {
 
 export async function validateAdminCredentials(email: string, password: string) {
   if (!email || !password) {
-    return false;
+    return { ok: false, reason: 'missing' } satisfies AdminCredentialsValidationResult;
   }
 
   const user = await getUserByEmail(email);
   if (!user || typeof user.passwordHash !== 'string') {
-    return false;
+    return { ok: false, reason: 'invalid' } satisfies AdminCredentialsValidationResult;
   }
 
-  return bcrypt.compare(password, user.passwordHash);
+  const validPassword = await bcrypt.compare(password, user.passwordHash);
+  if (!validPassword) {
+    return { ok: false, reason: 'invalid' } satisfies AdminCredentialsValidationResult;
+  }
+
+  if (user.role === 'pending') {
+    return { ok: false, reason: 'pending' } satisfies AdminCredentialsValidationResult;
+  }
+
+  if (user.role !== 'admin') {
+    return { ok: false, reason: 'forbidden' } satisfies AdminCredentialsValidationResult;
+  }
+
+  return { ok: true } satisfies AdminCredentialsValidationResult;
 }

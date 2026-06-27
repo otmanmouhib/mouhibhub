@@ -1,6 +1,26 @@
 import Link from 'next/link';
+import { getDb } from '../lib/mongodb';
 
-export default function Home() {
+export const dynamic = 'force-dynamic';
+
+type AuthSettings = {
+  _id: 'auth';
+  registerEnabled?: boolean;
+};
+
+async function isRegisterEnabled() {
+  try {
+    const db = await getDb('mouhibhub');
+    const settings = await db.collection<AuthSettings>('settings').findOne({ _id: 'auth' });
+    return Boolean(settings?.registerEnabled);
+  } catch {
+    return false;
+  }
+}
+
+export default async function Home() {
+  const registerEnabled = await isRegisterEnabled();
+
   return (
     <main className="min-h-screen bg-slate-950 text-slate-100">
       <section className="mx-auto flex min-h-screen max-w-7xl flex-col justify-center px-6 py-16 sm:px-10 lg:px-16">
@@ -25,6 +45,14 @@ export default function Home() {
               >
                 Login to dashboard
               </Link>
+              {registerEnabled ? (
+                <Link
+                  href="/register"
+                  className="inline-flex w-full items-center justify-center rounded-2xl border border-slate-700 bg-slate-900/80 px-6 py-4 text-base font-semibold text-slate-100 transition hover:border-brand-400 hover:text-white sm:w-auto"
+                >
+                  Register
+                </Link>
+              ) : null}
             </div>
           </div>
 

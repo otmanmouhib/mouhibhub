@@ -86,7 +86,7 @@ type ItemRecord = {
 };
 
 type ImageItem = { _id: string; filename: string };
-type ContactRecord = { _id: string; name?: string; email?: string; message?: string; phone?: string; status?: string; createdAt?: string };
+type ContactRecord = { _id: string; name?: string; email?: string; message?: string; phone?: string; status?: string; createdAt?: string; updatedAt?: string };
 
 type RelatedMap = Record<string, string>;
 type RelatedItem = { _id: string; label?: string; slug?: string; filename?: string; id?: string };
@@ -148,11 +148,52 @@ export default function SiteManagementPage() {
   const [galleryImages, setGalleryImages] = useState<ImageItem[]>([]);
   const [galleryFiles, setGalleryFiles] = useState<FileList | null>(null);
   const [contacts, setContacts] = useState<ContactRecord[]>([]);
+  const [creatingContact, setCreatingContact] = useState(false);
+  const [updatingContactId, setUpdatingContactId] = useState<string | null>(null);
+  const [deletingContactId, setDeletingContactId] = useState<string | null>(null);
+  const [newContactName, setNewContactName] = useState('');
+  const [newContactEmail, setNewContactEmail] = useState('');
+  const [newContactMessage, setNewContactMessage] = useState('');
+  const [newContactPhone, setNewContactPhone] = useState('');
+  const [newContactStatus, setNewContactStatus] = useState('New');
+  const [editingContactId, setEditingContactId] = useState<string | null>(null);
+  const [editContactName, setEditContactName] = useState('');
+  const [editContactEmail, setEditContactEmail] = useState('');
+  const [editContactMessage, setEditContactMessage] = useState('');
+  const [editContactPhone, setEditContactPhone] = useState('');
+  const [editContactStatus, setEditContactStatus] = useState('New');
   const [enterpriseId, setEnterpriseId] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [uploadingGallery, setUploadingGallery] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+
+  const confirmWithToast = useCallback((message: string) => {
+    return new Promise<boolean>((resolve) => {
+      let settled = false;
+
+      toast(message, {
+        duration: 8000,
+        action: {
+          label: 'Confirm',
+          onClick: () => {
+            settled = true;
+            resolve(true);
+          },
+        },
+        cancel: {
+          label: 'Cancel',
+          onClick: () => {
+            settled = true;
+            resolve(false);
+          },
+        },
+        onAutoClose: () => {
+          if (!settled) resolve(false);
+        },
+      });
+    });
+  }, []);
 
   const loadRelated = useCallback(
     async (type: string, setMap: (map: RelatedMap) => void, labelField: 'label' | 'slug' | 'filename') => {
@@ -252,6 +293,7 @@ export default function SiteManagementPage() {
             phone: contact.phone,
             status: contact.status,
             createdAt: contact.createdAt,
+            updatedAt: contact.updatedAt,
           }))
         : [];
       setContacts(sourceContacts);
@@ -309,7 +351,9 @@ export default function SiteManagementPage() {
 
   const handleDelete = useCallback(
     async (itemId: string) => {
-      if (!collection || !confirm('Delete this item? This action cannot be undone.')) return;
+      if (!collection) return;
+      const shouldDelete = await confirmWithToast('Delete this item? This action cannot be undone.');
+      if (!shouldDelete) return;
       setDeletingId(itemId);
 
       try {
@@ -330,7 +374,7 @@ export default function SiteManagementPage() {
         setDeletingId(null);
       }
     },
-    [collection, router, supportedSite, apiPrefix],
+    [collection, router, supportedSite, apiPrefix, confirmWithToast],
   );
 
   const uploadGalleryImages = useCallback(async () => {
@@ -362,7 +406,8 @@ export default function SiteManagementPage() {
 
   const handleDeleteGalleryImage = useCallback(
     async (imageId: string) => {
-      if (!confirm('Delete this image from the gallery?')) return;
+      const shouldDelete = await confirmWithToast('Delete this image from the gallery?');
+      if (!shouldDelete) return;
       setDeletingId(imageId);
 
       try {
@@ -383,8 +428,135 @@ export default function SiteManagementPage() {
         setDeletingId(null);
       }
     },
-    [router],
+    [router, confirmWithToast],
   );
+
+  const formatContactDate = useCallback((value?: string) => {
+    if (!value) return '-';
+    const parsed = new Date(value);
+    if (Number.isNaN(parsed.getTime())) return '-';
+    return parsed.toLocaleString();
+  }, []);
+
+  const resetContactForm = useCallback(() => {
+    setNewContactName('');
+    setNewContactEmail('');
+    setNewContactMessage('');
+    setNewContactPhone('');
+    setNewContactStatus('New');
+  }, []);
+
+  const startContactEdit = useCallback((contact: ContactRecord) => {
+    setEditingContactId(contact._id);
+    setEditContactName(contact.name ?? '');
+    setEditContactEmail(contact.email ?? '');
+    setEditContactMessage(contact.message ?? '');
+    setEditContactPhone(contact.phone ?? '');
+    setEditContactStatus(contact.status ?? 'New');
+  }, []);
+
+  const cancelContactEdit = useCallback(() => {
+    setEditingContactId(null);
+    setEditContactName('');
+    setEditContactEmail('');
+    setEditContactMessage('');
+    setEditContactPhone('');
+    setEditContactStatus('New');
+  }, []);
+
+  const handleCreateContact = useCallback(async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    setCreatingContact(true);
+
+    try {
+      const response = await fetchWithAuthRedirect(router, `/api/contacts?db=${encodeURIComponent(siteName)}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: newContactName,
+          email: newContactEmail,
+          message: newContactMessage,
+          phone: newContactPhone,
+          status: newContactStatus,
+        }),
+      });
+
+      if (response.status === 401) return;
+      const payload = await response.json().catch(() => null);
+      if (!response.ok) {
+        throw new Error(payload?.message || 'Unable to create contact submission');
+      }
+
+      toast.success('Contact submission created.');
+      resetContactForm();
+      await loadContacts();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Unable to create contact submission.');
+    } finally {
+      setCreatingContact(false);
+    }
+  }, [router, siteName, newContactName, newContactEmail, newContactMessage, newContactPhone, newContactStatus, loadContacts, resetContactForm]);
+
+  const handleUpdateContact = useCallback(async (contactId: string) => {
+    setUpdatingContactId(contactId);
+
+    try {
+      const response = await fetchWithAuthRedirect(router, `/api/contacts/${encodeURIComponent(contactId)}?db=${encodeURIComponent(siteName)}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: editContactName,
+          email: editContactEmail,
+          message: editContactMessage,
+          phone: editContactPhone,
+          status: editContactStatus,
+        }),
+      });
+
+      if (response.status === 401) return;
+      const payload = await response.json().catch(() => null);
+      if (!response.ok) {
+        throw new Error(payload?.message || 'Unable to update contact submission');
+      }
+
+      toast.success('Contact submission updated.');
+      cancelContactEdit();
+      await loadContacts();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Unable to update contact submission.');
+    } finally {
+      setUpdatingContactId(null);
+    }
+  }, [router, siteName, editContactName, editContactEmail, editContactMessage, editContactPhone, editContactStatus, loadContacts, cancelContactEdit]);
+
+  const handleDeleteContact = useCallback(async (contact: ContactRecord) => {
+    const shouldDelete = await confirmWithToast(`Delete contact submission for ${contact.email ?? contact.name ?? 'this contact'}?`);
+    if (!shouldDelete) return;
+
+    setDeletingContactId(contact._id);
+
+    try {
+      const response = await fetchWithAuthRedirect(router, `/api/contacts/${encodeURIComponent(contact._id)}?db=${encodeURIComponent(siteName)}`, {
+        method: 'DELETE',
+      });
+
+      if (response.status === 401) return;
+      const payload = await response.json().catch(() => null);
+      if (!response.ok) {
+        throw new Error(payload?.message || 'Unable to delete contact submission');
+      }
+
+      toast.success('Contact submission deleted.');
+      if (editingContactId === contact._id) {
+        cancelContactEdit();
+      }
+      await loadContacts();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Unable to delete contact submission.');
+    } finally {
+      setDeletingContactId(null);
+    }
+  }, [router, siteName, loadContacts, confirmWithToast, editingContactId, cancelContactEdit]);
 
   const renderMetadataBadge = (collectionType: string, item: ItemRecord) => {
     if (collectionType === 'services') {
@@ -823,6 +995,60 @@ export default function SiteManagementPage() {
           </div>
         </section>
 
+        <section className="rounded-xl border border-slate-200/60 bg-white p-6 shadow-sm">
+          <h2 className="text-lg font-semibold text-slate-900">Create contact submission</h2>
+          <p className="mt-1 text-sm text-slate-500">Add a manual contact submission for {siteName}.</p>
+          <form className="mt-4 grid gap-3 md:grid-cols-6" onSubmit={handleCreateContact}>
+            <input
+              type="text"
+              placeholder="Name"
+              value={newContactName}
+              onChange={(event) => setNewContactName(event.target.value)}
+              required
+              className="rounded-lg border border-slate-200/60 bg-white px-3 py-2 text-sm text-slate-700 shadow-sm focus:border-brand-400 focus:outline-none focus:ring-2 focus:ring-brand-500/20"
+            />
+            <input
+              type="email"
+              placeholder="Email"
+              value={newContactEmail}
+              onChange={(event) => setNewContactEmail(event.target.value)}
+              required
+              className="rounded-lg border border-slate-200/60 bg-white px-3 py-2 text-sm text-slate-700 shadow-sm focus:border-brand-400 focus:outline-none focus:ring-2 focus:ring-brand-500/20"
+            />
+            <input
+              type="text"
+              placeholder="Phone"
+              value={newContactPhone}
+              onChange={(event) => setNewContactPhone(event.target.value)}
+              className="rounded-lg border border-slate-200/60 bg-white px-3 py-2 text-sm text-slate-700 shadow-sm focus:border-brand-400 focus:outline-none focus:ring-2 focus:ring-brand-500/20"
+            />
+            <input
+              type="text"
+              placeholder="Message"
+              value={newContactMessage}
+              onChange={(event) => setNewContactMessage(event.target.value)}
+              required
+              className="rounded-lg border border-slate-200/60 bg-white px-3 py-2 text-sm text-slate-700 shadow-sm focus:border-brand-400 focus:outline-none focus:ring-2 focus:ring-brand-500/20"
+            />
+            <select
+              value={newContactStatus}
+              onChange={(event) => setNewContactStatus(event.target.value)}
+              className="rounded-lg border border-slate-200/60 bg-white px-3 py-2 text-sm text-slate-700 shadow-sm focus:border-brand-400 focus:outline-none focus:ring-2 focus:ring-brand-500/20"
+            >
+              <option value="New">New</option>
+              <option value="In Progress">In Progress</option>
+              <option value="Resolved">Resolved</option>
+            </select>
+            <button
+              type="submit"
+              disabled={creatingContact}
+              className="rounded-lg bg-gradient-to-r from-brand-500 to-brand-600 px-4 py-2 text-sm font-medium text-white shadow-sm transition-all duration-200 hover:shadow-md disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              {creatingContact ? 'Creating…' : 'Create'}
+            </button>
+          </form>
+        </section>
+
         {error ? (
           <div className="rounded-xl border border-rose-200/60 bg-rose-50 p-6 text-rose-700 shadow-sm">
             <div className="flex items-center gap-3">
@@ -861,20 +1087,115 @@ export default function SiteManagementPage() {
                   <th className="px-6 py-3.5 text-left text-xs font-medium uppercase tracking-wider text-slate-500">Message</th>
                   <th className="px-6 py-3.5 text-left text-xs font-medium uppercase tracking-wider text-slate-500">Phone</th>
                   <th className="px-6 py-3.5 text-left text-xs font-medium uppercase tracking-wider text-slate-500">Status</th>
+                  <th className="px-6 py-3.5 text-left text-xs font-medium uppercase tracking-wider text-slate-500">Created</th>
+                  <th className="px-6 py-3.5 text-left text-xs font-medium uppercase tracking-wider text-slate-500">Updated</th>
+                  <th className="px-6 py-3.5 text-left text-xs font-medium uppercase tracking-wider text-slate-500">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-200/60">
                 {contacts.map((contact) => (
                   <tr key={contact._id} className="transition-colors hover:bg-slate-50/50">
-                    <td className="px-6 py-4 text-sm font-medium text-slate-900">{contact.name}</td>
-                    <td className="px-6 py-4 text-sm text-slate-600">{contact.email}</td>
-                    <td className="px-6 py-4 text-sm text-slate-600">{contact.message}</td>
-                    <td className="px-6 py-4 text-sm text-slate-600">{contact.phone ?? '-'}</td>
-                    <td className="px-6 py-4">
-                      <span className={`inline-flex items-center rounded-lg px-2.5 py-1 text-xs font-medium ${contact.status === 'New' ? 'bg-emerald-50 text-emerald-700 border border-emerald-200/60' : 'bg-slate-100 text-slate-700 border border-slate-200/60'}`}>
-                        {contact.status ?? 'New'}
-                      </span>
-                    </td>
+                    {editingContactId === contact._id ? (
+                      <>
+                        <td className="px-6 py-4 text-sm font-medium text-slate-900">
+                          <input
+                            type="text"
+                            value={editContactName}
+                            onChange={(event) => setEditContactName(event.target.value)}
+                            className="w-full rounded-lg border border-slate-200/60 bg-white px-2.5 py-1.5 text-sm text-slate-700 shadow-sm focus:border-brand-400 focus:outline-none focus:ring-2 focus:ring-brand-500/20"
+                          />
+                        </td>
+                        <td className="px-6 py-4 text-sm text-slate-600">
+                          <input
+                            type="email"
+                            value={editContactEmail}
+                            onChange={(event) => setEditContactEmail(event.target.value)}
+                            className="w-full rounded-lg border border-slate-200/60 bg-white px-2.5 py-1.5 text-sm text-slate-700 shadow-sm focus:border-brand-400 focus:outline-none focus:ring-2 focus:ring-brand-500/20"
+                          />
+                        </td>
+                        <td className="px-6 py-4 text-sm text-slate-600">
+                          <input
+                            type="text"
+                            value={editContactMessage}
+                            onChange={(event) => setEditContactMessage(event.target.value)}
+                            className="w-full rounded-lg border border-slate-200/60 bg-white px-2.5 py-1.5 text-sm text-slate-700 shadow-sm focus:border-brand-400 focus:outline-none focus:ring-2 focus:ring-brand-500/20"
+                          />
+                        </td>
+                        <td className="px-6 py-4 text-sm text-slate-600">
+                          <input
+                            type="text"
+                            value={editContactPhone}
+                            onChange={(event) => setEditContactPhone(event.target.value)}
+                            className="w-full rounded-lg border border-slate-200/60 bg-white px-2.5 py-1.5 text-sm text-slate-700 shadow-sm focus:border-brand-400 focus:outline-none focus:ring-2 focus:ring-brand-500/20"
+                          />
+                        </td>
+                        <td className="px-6 py-4">
+                          <select
+                            value={editContactStatus}
+                            onChange={(event) => setEditContactStatus(event.target.value)}
+                            className="rounded-lg border border-slate-200/60 bg-white px-2.5 py-1.5 text-sm text-slate-700 shadow-sm focus:border-brand-400 focus:outline-none focus:ring-2 focus:ring-brand-500/20"
+                          >
+                            <option value="New">New</option>
+                            <option value="In Progress">In Progress</option>
+                            <option value="Resolved">Resolved</option>
+                          </select>
+                        </td>
+                        <td className="px-6 py-4 text-xs text-slate-500">{formatContactDate(contact.createdAt)}</td>
+                        <td className="px-6 py-4 text-xs text-slate-500">{formatContactDate(contact.updatedAt)}</td>
+                        <td className="px-6 py-4">
+                          <div className="flex gap-2">
+                            <button
+                              type="button"
+                              disabled={updatingContactId === contact._id}
+                              onClick={() => handleUpdateContact(contact._id)}
+                              className="rounded-lg bg-gradient-to-r from-brand-500 to-brand-600 px-3 py-1.5 text-xs font-medium text-white shadow-sm transition-all duration-200 hover:shadow-md disabled:cursor-not-allowed disabled:opacity-60"
+                            >
+                              {updatingContactId === contact._id ? 'Saving…' : 'Save'}
+                            </button>
+                            <button
+                              type="button"
+                              onClick={cancelContactEdit}
+                              className="rounded-lg border border-slate-200/60 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 shadow-sm transition-colors hover:bg-slate-50"
+                            >
+                              Cancel
+                            </button>
+                          </div>
+                        </td>
+                      </>
+                    ) : (
+                      <>
+                        <td className="px-6 py-4 text-sm font-medium text-slate-900">{contact.name}</td>
+                        <td className="px-6 py-4 text-sm text-slate-600">{contact.email}</td>
+                        <td className="px-6 py-4 text-sm text-slate-600">{contact.message}</td>
+                        <td className="px-6 py-4 text-sm text-slate-600">{contact.phone ?? '-'}</td>
+                        <td className="px-6 py-4">
+                          <span className={`inline-flex items-center rounded-lg px-2.5 py-1 text-xs font-medium ${contact.status === 'New' ? 'bg-emerald-50 text-emerald-700 border border-emerald-200/60' : 'bg-slate-100 text-slate-700 border border-slate-200/60'}`}>
+                            {contact.status ?? 'New'}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4 text-xs text-slate-500">{formatContactDate(contact.createdAt)}</td>
+                        <td className="px-6 py-4 text-xs text-slate-500">{formatContactDate(contact.updatedAt)}</td>
+                        <td className="px-6 py-4">
+                          <div className="flex gap-2">
+                            <button
+                              type="button"
+                              onClick={() => startContactEdit(contact)}
+                              className="rounded-lg border border-slate-200/60 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 shadow-sm transition-colors hover:bg-slate-50"
+                            >
+                              Edit
+                            </button>
+                            <button
+                              type="button"
+                              disabled={deletingContactId === contact._id}
+                              onClick={() => handleDeleteContact(contact)}
+                              className="rounded-lg border border-rose-200/60 bg-rose-50 px-3 py-1.5 text-xs font-medium text-rose-700 shadow-sm transition-colors hover:bg-rose-100 disabled:cursor-not-allowed disabled:opacity-60"
+                            >
+                              {deletingContactId === contact._id ? 'Deleting…' : 'Delete'}
+                            </button>
+                          </div>
+                        </td>
+                      </>
+                    )}
                   </tr>
                 ))}
               </tbody>

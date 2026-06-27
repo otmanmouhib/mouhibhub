@@ -576,7 +576,34 @@ export default function AtlanticDunesForm({ collectionName, mode, itemId, siteNa
   }
 
   async function deleteImageFromLibrary(imageId: string, fieldName: string) {
-    if (!window.confirm('Delete this image from the library? This cannot be undone.')) {
+    const shouldDelete = await new Promise<boolean>((resolve) => {
+      let settled = false;
+
+      toast('Delete this image from the library? This cannot be undone.', {
+        duration: 8000,
+        action: {
+          label: 'Confirm',
+          onClick: () => {
+            settled = true;
+            resolve(true);
+          },
+        },
+        cancel: {
+          label: 'Cancel',
+          onClick: () => {
+            settled = true;
+            resolve(false);
+          },
+        },
+        onAutoClose: () => {
+          if (!settled) {
+            resolve(false);
+          }
+        },
+      });
+    });
+
+    if (!shouldDelete) {
       return;
     }
 

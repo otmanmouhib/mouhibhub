@@ -34,6 +34,14 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 <DashboardNav />
               </Suspense>
             </div>
+
+            <button
+              type="button"
+              onClick={handleLogout}
+              className="w-full rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:border-brand-400 hover:text-brand-700"
+            >
+              Logout
+            </button>
           </div>
         </aside>
 

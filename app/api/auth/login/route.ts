@@ -10,11 +10,18 @@ function createCookie(value: string) {
 
 export async function POST(request: NextRequest) {
   const body = await request.json();
-  const email = String(body?.email || '');
+  const email = String(body?.email || '').trim().toLowerCase();
   const password = String(body?.password || '');
 
-  if (!(await validateAdminCredentials(email, password))) {
-    return new NextResponse(JSON.stringify({ message: 'Invalid email or password' }), {
+  const validation = await validateAdminCredentials(email, password);
+
+  if (!validation.ok) {
+    const message =
+      validation.reason === 'pending'
+        ? 'Your account is pending approval. Only admin accounts can log in.'
+        : 'Invalid email or password';
+
+    return new NextResponse(JSON.stringify({ message }), {
       status: 401,
       headers: { 'Content-Type': 'application/json' },
     });
