@@ -12,6 +12,12 @@ import {
 
 type RelatedOption = { value: string; label: string; filename?: string; subcategories?: Array<{ slug: string; label: string; description?: string }> };
 type RelatedOptions = Record<string, Array<RelatedOption>>;
+type PoleDomainOption = { value: string; label: string; description?: string };
+type PoleRelatedOption = RelatedOption & {
+  domains?: PoleDomainOption[];
+  productDomains?: PoleDomainOption[];
+  serviceDomains?: PoleDomainOption[];
+};
 type UploadQueueItem = {
   id: string;
   file: File;
@@ -78,6 +84,60 @@ function getDynamicSubcategoryOptions(collectionName: string, formData: FormData
   }
 
   return [];
+}
+
+function getPoleValue(collectionName: string, formData: FormData) {
+  if (!['products', 'services'].includes(collectionName)) return '';
+  return String(formData.poleId ?? formData.pole ?? '').trim();
+}
+
+function isPoleScopedDomainField(collectionName: string, fieldName: string) {
+  return ['products', 'services'].includes(collectionName) && ['domainId', 'domain'].includes(fieldName);
+}
+
+function normalizePoleDomains(domains: any[]): PoleDomainOption[] {
+  return domains.reduce<PoleDomainOption[]>((acc, domain: any) => {
+    const value = String(domain?.slug ?? domain?.id ?? domain?._id ?? domain?.label ?? domain ?? '').trim();
+    if (!value) return acc;
+
+    acc.push({
+      value,
+      label: String(domain?.label ?? domain?.slug ?? domain?.id ?? value),
+      description: domain?.description ?? undefined,
+    });
+
+    return acc;
+  }, []);
+}
+
+function getPoleScopedDomainOptions(
+  collectionName: string,
+  fieldName: string,
+  formData: FormData,
+  relatedOptions: RelatedOptions,
+): PoleDomainOption[] | null {
+  if (!isPoleScopedDomainField(collectionName, fieldName)) return null;
+
+  const selectedPole = getPoleValue(collectionName, formData);
+  if (!selectedPole) return [];
+
+  const poles = (relatedOptions.poles ?? []) as PoleRelatedOption[];
+  const selectedPoleOption = poles.find((option) => option.value === selectedPole);
+  if (!selectedPoleOption) return [];
+
+  const scopedDomains = collectionName === 'products'
+    ? (selectedPoleOption.productDomains ?? selectedPoleOption.domains ?? [])
+    : (selectedPoleOption.serviceDomains ?? selectedPoleOption.domains ?? []);
+
+  const uniqueDomains = new Map<string, PoleDomainOption>();
+  scopedDomains.forEach((domain) => {
+    if (!domain?.value) return;
+    if (!uniqueDomains.has(domain.value)) {
+      uniqueDomains.set(domain.value, domain);
+    }
+  });
+
+  return Array.from(uniqueDomains.values());
 }
 
 function getManagePageKey(collectionName: string) {
@@ -164,6 +224,7 @@ function getFormCompletion(formData: FormData, schema: AtlanticDunesCollectionSc
   
   const filledFields = requiredFields.filter(f => {
     const value = formData[f.name];
+    if (f.type === 'boolean') return typeof value === 'boolean';
     if (Array.isArray(value)) return value.length > 0 && value.some(v => v);
     return value && String(value).trim() !== '';
   });
@@ -277,6 +338,24 @@ export default function AtlanticDunesForm({ collectionName, mode, itemId, siteNa
           acc[field.name] = normalizeValue(loaded[field.name], field);
           return acc;
         }, {});
+        if (collectionName === 'boutique') {
+          normalized.shortDescription = String(loaded.shortDescription ?? loaded.excerpt ?? normalized.shortDescription ?? '');
+          normalized.details = Array.isArray(loaded.details)
+            ? loaded.details
+            : Array.isArray(loaded.detail)
+              ? loaded.detail
+              : normalized.details;
+          normalized.specs = Array.isArray(loaded.specs) ? loaded.specs : normalized.specs;
+          normalized.price = loaded.price !== undefined && loaded.price !== null ? String(loaded.price) : String(normalized.price ?? '');
+          const legacyStockValue = String(loaded.inStock ?? loaded.stock ?? loaded.availability ?? '').trim().toLowerCase();
+          normalized.inStock = typeof loaded.inStock === 'boolean'
+            ? loaded.inStock
+            : legacyStockValue.length > 0
+              ? !legacyStockValue.includes('out') && !legacyStockValue.includes('unavailable') && !legacyStockValue.includes('out of stock')
+              : false;
+          normalized.category = String(loaded.category ?? loaded.categoryId ?? normalized.category ?? '');
+          normalized.subcategory = String(loaded.subcategory ?? normalized.subcategory ?? '');
+        }
         if (activeSchema.singleton) {
           normalized._id = loaded._id ?? 'main';
         } else {
@@ -327,6 +406,9 @@ export default function AtlanticDunesForm({ collectionName, mode, itemId, siteNa
                 value: String(item[meta.valueField] ?? item._id),
                 label: String(item[meta.labelField] ?? item.label ?? item.slug ?? item.id ?? item.filename ?? item._id),
                 filename: item.filename,
+                domains: Array.isArray(item.domains) ? normalizePoleDomains(item.domains) : undefined,
+                productDomains: Array.isArray(item.productDomains) ? normalizePoleDomains(item.productDomains) : undefined,
+                serviceDomains: Array.isArray(item.serviceDomains) ? normalizePoleDomains(item.serviceDomains) : undefined,
                 subcategories: Array.isArray(item.subcategories)
                   ? item.subcategories.map((subcategory: any) => ({
                       slug: String(subcategory.slug ?? subcategory.id ?? subcategory.label ?? ''),
@@ -364,6 +446,26 @@ export default function AtlanticDunesForm({ collectionName, mode, itemId, siteNa
       }
     }
   }, [collectionName, formData.category, formData.categoryId, formData.subcategory, relatedOptions]);
+
+  useEffect(() => {
+    if (!schema || !['products', 'services'].includes(collectionName)) return;
+
+    const domainFieldName = schema.fields.some((field) => field.name === 'domainId')
+      ? 'domainId'
+      : schema.fields.some((field) => field.name === 'domain')
+        ? 'domain'
+        : null;
+
+    if (!domainFieldName) return;
+
+    const currentDomain = String(formData[domainFieldName] ?? '').trim();
+    if (!currentDomain) return;
+
+    const scopedDomainOptions = getPoleScopedDomainOptions(collectionName, domainFieldName, formData, relatedOptions) ?? [];
+    if (!scopedDomainOptions.some((option) => option.value === currentDomain)) {
+      setFormData((prev) => ({ ...prev, [domainFieldName]: '' }));
+    }
+  }, [schema, collectionName, formData.poleId, formData.pole, formData.domainId, formData.domain, relatedOptions]);
 
   function queueImageFiles(fieldName: string, files: FileList | File[]) {
     const fileArray = Array.isArray(files) ? files : Array.from(files);
@@ -860,9 +962,12 @@ export default function AtlanticDunesForm({ collectionName, mode, itemId, siteNa
     const value = formData[field.name];
     const relationOptions = field.relation ? relatedOptions[field.relation.collection] || [] : field.options || [];
     const dynamicSubcategoryOptions = getDynamicSubcategoryOptions(collectionName, formData, relatedOptions);
+    const poleScopedDomainOptions = getPoleScopedDomainOptions(collectionName, field.name, formData, relatedOptions);
+    const selectedPole = getPoleValue(collectionName, formData);
+    const domainDependsOnPole = isPoleScopedDomainField(collectionName, field.name);
     const selectOptions = field.name === 'subcategory' && (collectionName === 'boutique' || collectionName === 'news')
       ? dynamicSubcategoryOptions
-      : relationOptions;
+      : (poleScopedDomainOptions ?? relationOptions);
 
     switch (field.type) {
       case 'text':
@@ -959,15 +1064,21 @@ export default function AtlanticDunesForm({ collectionName, mode, itemId, siteNa
               id={field.name}
               value={String(value ?? '')}
               onChange={(event) => updateField(field.name, event.target.value)}
-              className="mt-3 w-full rounded-lg border border-brand-300/80 bg-white px-4 py-2.5 text-sm text-brand-900 outline-none transition focus:border-brand-400 focus:ring-2 focus:ring-brand-500/20"
+              disabled={domainDependsOnPole && !selectedPole}
+              className={`mt-3 w-full rounded-lg border border-brand-300/80 bg-white px-4 py-2.5 text-sm text-brand-900 outline-none transition focus:border-brand-400 focus:ring-2 focus:ring-brand-500/20 ${
+                domainDependsOnPole && !selectedPole ? 'cursor-not-allowed bg-brand-50/80 text-brand-600' : ''
+              }`}
             >
-              <option value="">Select {field.label}</option>
+              <option value="">{domainDependsOnPole && !selectedPole ? 'Select Pole first' : `Select ${field.label}`}</option>
               {selectOptions.map((option) => (
                 <option key={option.value} value={option.value}>
                   {option.label}
                 </option>
               ))}
             </select>
+            {domainDependsOnPole && !selectedPole ? (
+              <p className="mt-2 text-xs text-brand-600">Select a pole first to load available domains.</p>
+            ) : null}
             {['poles', 'domains', 'newsCategories'].includes(field.relation?.collection ?? '') ? (
               <div className="mt-4 rounded-xl border border-brand-300/80 bg-brand-100 p-4">
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">

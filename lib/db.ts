@@ -161,7 +161,7 @@ export function getDocumentationHint(collection: AtlanticDunesCollectionName) {
     newsCategories: 'Requires slug, label, description.',
     services: 'Requires slug, title, shortDescription, description, methodology, deliverable, poleId, domainId.',
     products: 'Requires slug, title, shortDescription, description, specs, performance, poleId, domainId, pdfLink.',
-    boutique: 'Requires slug, title, shortDescription, description, details, specs, price, availability, inStock, poleId, domainId.',
+    boutique: 'Requires slug, title, shortDescription, description, category, subcategory, details, specs, price, availability, inStock.',
     boutiqueCategories: 'Requires slug, label, description, and optional nested subcategories.',
     news: 'Requires slug, title, date, publishedAt, categoryId, summary, content.',
     entrepriseInfo: 'Single document with email, phones, addressLines, optional fax.',

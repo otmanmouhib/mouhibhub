@@ -77,6 +77,7 @@ type ItemRecord = {
   poleId?: string;
   domainId?: string;
   imageId?: string;
+  stock?: string;
   availability?: string;
   inStock?: boolean;
   status?: string;
@@ -390,6 +391,12 @@ export default function SiteManagementPage() {
       return item.status ? <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold uppercase tracking-[0.24em] text-slate-600">{item.status}</span> : null;
     }
     if (collectionType === 'boutique') {
+      if (typeof item.inStock === 'boolean') {
+        return <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold uppercase tracking-[0.24em] text-slate-600">{item.inStock ? 'In stock' : 'Out of stock'}</span>;
+      }
+      if (item.stock) {
+        return <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold uppercase tracking-[0.24em] text-slate-600">{item.stock}</span>;
+      }
       return item.availability ? <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold uppercase tracking-[0.24em] text-slate-600">{item.availability}</span> : null;
     }
     if (collectionType === 'news') {
@@ -451,6 +458,11 @@ export default function SiteManagementPage() {
             <div className="rounded-3xl bg-slate-50 p-4 text-sm text-slate-700">
               <p className="font-semibold text-slate-900">Stock</p>
               <p className="mt-2">{item.inStock ? 'In stock' : 'Out of stock'}</p>
+            </div>
+          ) : item.stock ? (
+            <div className="rounded-3xl bg-slate-50 p-4 text-sm text-slate-700">
+              <p className="font-semibold text-slate-900">Stock</p>
+              <p className="mt-2">{item.stock}</p>
             </div>
           ) : null}
         </div>
